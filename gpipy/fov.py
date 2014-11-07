@@ -14,7 +14,7 @@ from helperFun import *   #also imports numpy as np
 import datetime
 import matplotlib.pyplot as pyplot
 
-def plot(targ, targ_ra, targ_de, comp_rho, comp_theta, offset_x, offset_y, hms=False, deg=False):
+def plot(targ, targ_ra, targ_de, comp_rho, comp_theta, offset_x, offset_y, hms=False, deg=False, band='H'):
 
 	np.set_printoptions(threshold=np.nan)
 
@@ -113,11 +113,33 @@ def plot(targ, targ_ra, targ_de, comp_rho, comp_theta, offset_x, offset_y, hms=F
 	#Plot path of satellite spots eminating outwards from 45,135,225,315 - 3.5 deg
 	spot_theta = ((np.array([45.0,135.0,225.0,315.0])-3.5)*(np.pi/180.0))
 	spot_theta += ifs_ang
-	spot_x = 1.5 * np.cos(spot_theta)
-	spot_y = 1.5 * np.sin(spot_theta)
+
+	if band == 'Y':
+		spot_start = ((20*0.947108e-6)/7.8)*206264.806
+		spot_end = ((20*1.14209e-6)/7.8)*206264.806
+	if band == 'J':
+		spot_start = ((20*1.11407e-6)/7.8)*206264.806
+		spot_end = ((20*1.34973e-6)/7.8)*206264.806
+	if band == 'H':
+		spot_start = ((20*1.49461e-6)/7.8)*206264.806
+		spot_end = ((20*1.79739e-6)/7.8)*206264.806
+	if band == 'K1':
+		spot_start = ((20*1.88609e-6)/7.8)*206264.806
+		spot_end = ((20*2.19511e-6)/7.8)*206264.806
+	if band == 'K2':
+		spot_start = ((20*2.10741e-6)/7.8)*206264.806
+		spot_end = ((20*2.39639e-6)/7.8)*206264.806
+
+	spot_x_start = spot_start * np.cos(spot_theta)
+	spot_y_start = spot_start * np.sin(spot_theta)
+
+	spot_x_end = spot_end * np.cos(spot_theta)
+	spot_y_end = spot_end * np.sin(spot_theta)
+
+	#Spots are at 20lambda/D
 
 	for i in xrange(0,4):
-		pyplot.plot([0.0,spot_x[i]],[0.0,spot_y[i]],color='black')
+		pyplot.plot([spot_x_start[i],spot_x_end[i]],[spot_y_start[i],spot_y_end[i]],color='black')
 
 	d_ha = 0.25 #loop through every 15 mins
 	ha_vals = np.arange(min_ha,max_ha,d_ha,dtype=np.float32)
