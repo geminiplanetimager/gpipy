@@ -1,15 +1,8 @@
-#!/usr/bin/env python
-#import os, sys
 import numpy as np
-import matplotlib.pyplot as pl
+import matplotlib.pyplot as plt
 import matplotlib
 import os
 import astropy
-try:
-    from IPython.core.debugger import Tracer; stop = Tracer()
-except:
-    pass
-
 try:
     import astropy.io.fits as fits
 except:
@@ -18,10 +11,7 @@ except:
 import logging
 import glob
 import copy
-_log = logging.getLogger('gpidata')
-
-__version__ = '0.1'
-
+_log = logging.getLogger('gpipy')
 
 __doc__ ="""
 GPI Data File interface
@@ -53,13 +43,18 @@ the functionality of the GPI Data Pipeline's Data Parser. It will generate
 recipes to reduce your data. 
 
 """
+#-------- Package constants
 
+_pixelscale=0.01414
+
+
+#-------- Public functions
 
 def read(filename, loadData=True, verbose=False, **kwargs):
     """ Open a GPI data file and return it as an object.
     
     This is a factory function that returns an object 
-    of the most specific appropriate type (e.g. IFSSpectralCube, IFSPolarimetryCube etc)
+    of the most specific appropriate type (e.g. IFSSpectralCube, IFSStokesCube etc)
     depending on the header keywords found therein.
 
     Examples
@@ -101,7 +96,10 @@ def read(filename, loadData=True, verbose=False, **kwargs):
 
     if exthead['NAXIS'] == 3 and 'WOLL' in head['DISPERSR']:
         if verbose: _log.info("File %s appears to be a Polarimetric Data Cube" % filename)
-        return IFSPolarimetryCube(filename, loadData=loadData, **kwargs)
+        if exthead['NAXIS3'] == 2:
+            return IFSPolarimetryPair(filename, loadData=loadData, **kwargs)
+        else:
+            return IFSStokesCube(filename, loadData=loadData, **kwargs)
     elif exthead['NAXIS'] == 2 and exthead['XTENSION'] == 'IMAGE':
         if verbose: _log.info("File %s appears to be a 2D IFS Image" % filename)
         return IFSData2D(filename, loadData=loadData, **kwargs)
@@ -590,7 +588,7 @@ class IFSSpectralCube(IFSData):
         """
 
         spec = self.ExtractSpectrum(*args, **kwargs)
-        pl.plot(self.wavelengths,spec)
+        plt.plot(self.wavelengths,spec)
 
     def Fit1Peak(self, *args, **kwargs):
         """ Fit a single Gaussian function to a 1D spectrum extracted from the cube.
@@ -604,8 +602,8 @@ class IFSSpectralCube(IFSData):
         spec_uncert = np.sqrt(spec.clip(0)) # FIXME add in gain here...
         spec_uncert[spec_uncert == 0] = np.median(spec_uncert) # this is a quick hack
         waves = self.wavelengths
-        pl.clf()
-        pl.plot(waves, spec)
+        plt.clf()
+        plt.plot(waves, spec)
 
 
         def gaussian(lam, cen, sig, height, offset):
@@ -614,12 +612,12 @@ class IFSSpectralCube(IFSData):
 
         popt, pcov = scipy.optimize.curve_fit(gaussian, self.wavelengths, spec, p0=initial_guess, sigma=spec_uncert)
 
-        pl.plot(self.wavelengths, gaussian(self.wavelengths, *popt), "r--")
-        pl.text(popt[0]+0.01, popt[2]*0.95, "Center: %.3f $\mu m \pm $ %.3f \nFWHM: %.3f $\mu m \pm $ %.3f" % 
+        plt.plot(self.wavelengths, gaussian(self.wavelengths, *popt), "r--")
+        plt.text(popt[0]+0.01, popt[2]*0.95, "Center: %.3f $\mu m \pm $ %.3f \nFWHM: %.3f $\mu m \pm $ %.3f" % 
                 (popt[0], np.sqrt(pcov[0,0]), popt[1], np.sqrt(pcov[1,1])))
         #stop()
 
-        pl.suptitle(self.name)
+        plt.suptitle(self.name)
         return popt
 
     def FitNPeaks(self, N, *args, **kwargs):
@@ -635,8 +633,8 @@ class IFSSpectralCube(IFSData):
         spec_uncert = np.sqrt(spec.clip(0)) # FIXME add in gain here...
         spec_uncert[spec_uncert == 0] = np.median(spec_uncert) # this is a quick hack
         waves = self.wavelengths
-        pl.clf()
-        pl.plot(waves, spec)
+        plt.clf()
+        plt.plot(waves, spec)
 
 
         def gaussian(lam, cen, sig, height, offset):
@@ -655,12 +653,12 @@ class IFSSpectralCube(IFSData):
 
         popt, pcov = scipy.optimize.curve_fit(gaussian, self.wavelengths, spec, p0=initial_guess, sigma=spec_uncert)
 
-        pl.plot(self.wavelengths, gaussian(self.wavelengths, *popt), "r--")
-        pl.text(popt[0]+0.01, popt[2]*0.95, "Center: %.3f $\mu m \pm $ %.3f \nFWHM: %.3f $\mu m \pm $ %.3f" % 
+        plt.plot(self.wavelengths, gaussian(self.wavelengths, *popt), "r--")
+        plt.text(popt[0]+0.01, popt[2]*0.95, "Center: %.3f $\mu m \pm $ %.3f \nFWHM: %.3f $\mu m \pm $ %.3f" % 
                 (popt[0], np.sqrt(pcov[0,0]), popt[1], np.sqrt(pcov[1,1])))
         #stop()
 
-        pl.suptitle(self.name)
+        plt.suptitle(self.name)
         return popt
 
 
@@ -679,9 +677,9 @@ class IFSSpectralCube(IFSData):
             table['col2'].name = 'intensity'
             table['wavelength'] /= 1e4 # convert angstroms to microns
 
-            #pl.plot(table['wavelength'], table['intensity'], "--", color=color)
+            #plt.plot(table['wavelength'], table['intensity'], "--", color=color)
             for wave, flux in table:
-                pl.plot( [wave, wave], [0,flux],  color=color, linewidth=2)
+                plt.plot( [wave, wave], [0,flux],  color=color, linewidth=2)
                 #stop()
     
             # rebin array onto observed spectral channels, taking into account sums over
@@ -694,9 +692,9 @@ class IFSSpectralCube(IFSData):
                 wbin = np.where( (table['wavelength'] > edge_locations[i] ) & 
                                  (table['wavelength'] < edge_locations[i+1] ) )
                 rebinned_flux[i] = table['intensity'][wbin].sum()
-            pl.plot( waves, rebinned_flux, ":", drawstyle='steps-mid', color=color)
+            plt.plot( waves, rebinned_flux, ":", drawstyle='steps-mid', color=color)
 
-        ax = pl.gca()
+        ax = plt.gca()
 
         # now overplot the filter transmission profile
         ax2 = ax.twinx()
@@ -724,7 +722,7 @@ class IFSSpectralCube(IFSData):
         linelist = open(linelist_file).readlines()
         # restrict to the lines we care about for the current filter:
         lines = [l.strip() for l in linelist if l.startswith(filter)]
-        yrange = pl.gca().get_ybound()
+        yrange = plt.gca().get_ybound()
         for line in lines:
             lineparts = line.split() # will be filter, Xe/Ar, then a set of wavelengths
             filtername, source, wavelens = lineparts[0], lineparts[1], lineparts[2:]
@@ -733,14 +731,14 @@ class IFSSpectralCube(IFSData):
             else: continue
 
             for wavelen in wavelens:
-                pl.text(float(wavelen), texty, source)
+                plt.text(float(wavelen), texty, source)
 
  
-        pl.title(filter)
+        plt.title(filter)
 
 
-        pl.draw()
-        pl.show()
+        plt.draw()
+        plt.show()
 
 
 
@@ -763,14 +761,144 @@ class IFSSpectralCube(IFSData):
             norm=matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax)
 
 
-        pl.imshow( self.data[index], norm=norm) 
-        pl.title(self.name+", slice "+str(index)+": %.3f $\mu m$" % self.wavelengths[index])
+        plt.imshow( self.data[index], norm=norm) 
+        plt.title(self.name+", slice "+str(index)+": %.3f $\mu m$" % self.wavelengths[index])
 
 
 #--------------------------------------------------------------------------------
 
-class IFSPolarimetryCube(IFSData):
-    """ 3D polarimetry cube IFS data from GPI
+class IFSPolarimetry(IFSData):
+    """ 3D polarimetry orthogonal linear polarization pair IFS data from GPI
+
+    """
+    def imshow(self, what='i', vmin=None, vmax=None, scale='log', norm=None, 
+            center=None, crop=None, aspect=1.0, 
+            verbose=False, coords='arcsec',
+            colorbar=False, colorbar_orientation='horizontal', colorbar_kwargs=None, 
+            smooth=None, counts_per_sec=False, 
+            mask = None, 
+            **kwargs):
+        """ 
+        Parameters
+        ----------
+        what: string
+            What quantity to display. One of {'i','q','u','v','p'} etc. 
+        vmin, vmax : floats
+            Min and max for display scale. Default is image min and max
+        norm : matplotlib.colors.Norm instance
+            Lets you explicitly pass in a display scale normalization.
+        center : tuple of floats
+            Location of star center. Default is to read from PSFCENTX, PSFCENTY keywords
+        aspect : float
+            Ratio of X over Y size for the displayed subregion. Lets you display rectangular cutouts.
+        colorbar : bool
+            Display a colorbar? Default is False
+        colorbar_orientation : string
+            either 'horizontal' or 'vertical'
+        smooth : float, optional
+            Smooth by Gaussian filtering before display? Set this to the desired Gaussian FWHM
+        counts_per_sec : Boolean
+            Display in counts per second? 
+
+        """
+
+        # Center of display
+        if center is None:
+            cenx = self['PSFCENTX']
+            ceny = self['PSFCENTY']
+        else:
+            cenx,ceny = center[1], center[0]
+
+        if verbose: print("Center (X,Y) = ({0}, {1})".format(cenx, ceny))
+
+        try:
+            # Allow numeric subscripts to access slices of the data array
+            what_to_plot = np.copy(self.data[what])
+        except:
+            # allow variable name subscripts to access named attributes
+            what_to_plot = np.copy(self.__getattribute__(what))
+
+        if counts_per_sec:
+            what_to_plot = what_to_plot / self.itime
+
+        if norm is None:
+            if vmax is None: vmax = np.nanmax(what_to_plot)
+            if vmin is None: vmin = np.nanmin(what_to_plot)
+            if scale=='log':
+                if vmin < 0 : 
+                    _log.warning("Cannot have a negative vmin for a log scale.")
+                    vmin=0.01 
+
+                norm = matplotlib.colors.LogNorm(vmin=vmin,vmax=vmax)
+            else:
+                norm = matplotlib.colors.Normalize(vmin=vmin,vmax=vmax)
+            if verbose:
+                print ("vmin: {0}\tvmax: {1}".format(vmin,vmax))
+
+        if smooth is not None:
+            import scipy.ndimage
+            what_to_plot = scipy.ndimage.filters.gaussian_filter(what_to_plot*1.0, smooth )
+
+        if coords.lower().startswith('arcsec'):
+            shp = what_to_plot.shape
+            # calculate the extent of the image, taking into account the half pixel border
+            # since the coordinates are centered on pixels
+            extent=  np.asarray([-cenx-0.5, shp[1]-cenx-0.5, -ceny-0.5, shp[0]-ceny-0.5]) * _pixelscale
+        elif coords.lower().startswith('pix'):
+            extent=None
+
+        if mask is not None:
+            what_to_plot *= mask
+
+        plt.imshow(what_to_plot,  norm=norm, extent=extent, **kwargs)
+        ax = plt.gca()
+
+        if crop is not None:
+            if coords.lower().startswith('arc'):
+                box = crop/2.0*_pixelscale
+                ax.set_xlim( -box*float(aspect), box*float(aspect) )
+                ax.set_ylim( -box, box)
+            elif coords.lower().startswith('pix'):
+                box = crop/2.0
+                ax.set_xlim( cenx-box*float(aspect), cenx+box*float(aspect) )
+                ax.set_ylim( ceny-box, ceny+box)
+
+        if colorbar:
+            scale='log'
+            if colorbar_kwargs is None: colorbar_kwargs = {}
+            cb = plt.colorbar(ax.images[0], ax=ax, orientation=colorbar_orientation, **colorbar_kwargs)
+            #if scale.lower() =='log':
+                #ticks = np.logspace(np.log10(vmin), np.log10(vmax), np.log10(vmax/vmin)+1)
+                #if colorbar_orientation=='horizontal' and vmax==1e-1 and vmin==1e-8: ticks = [1e-8, 1e-6, 1e-4,  1e-2, 1e-1] # looks better
+                #cb.set_ticks(ticks)
+                #cb.set_ticklabels(ticks)
+
+            return (ax,cb)
+        return ax
+
+
+
+class IFSPolarimetryPair(IFSPolarimetry):
+    """ 3D polarimetry orthogonal linear polarization pair IFS data from GPI
+
+    """
+
+    @property
+    def i(self):
+        return self.data[0] + self.data[1]
+    @property
+    def pol0(self):
+        return self.data[0]
+    @property
+    def pol1(self):
+        return self.data[1]
+
+
+
+#--------------------------------------------------------------------------------
+
+class IFSStokesCube(IFSPolarimetry):
+    """ 3D polarimetry Stokes {I,Q,U,V} cube IFS data from GPI
 
     """
 
@@ -778,7 +906,133 @@ class IFSPolarimetryCube(IFSData):
     @property
     def stokes(self):
         pass
- 
+
+    @property
+    def i(self):
+        return self.data[0]
+
+    @property
+    def q(self):
+        return self.data[1]
+
+    @property
+    def u(self):
+        return self.data[2]
+
+    @property
+    def p(self):
+        return np.sqrt(self.data[1]**2+self.data[2]**2)
+
+    @property
+    def theta(self):
+        return  0.5* np.arctan2(self.u, self.q) + np.pi/2
+
+    @property
+    def theta_deg(self):
+        return np.rad2deg(self.theta)
+
+    @property
+    def fraction(self):
+        return self.p/self.i
+
+    def polvect(self,showevery=5, smooth=True, fractional=False, imin=None, pmin=None,pmax=None,pfmin=None,
+            scale=1.0, scalebar_value=0.5, scalebar_location=(0.85, 0.95), scalebar_fontsize='large', 
+            scalebar_label=None, coords='arcsec',
+            color='white', verbose=False, **kwargs):
+        """ Plot polarization vectors for Stokes datacube.
+
+        Parameters
+        ------------
+        showevery : integer
+            display every Nth vector? Set to 1 to show all.
+        smooth : bool
+            Smooth by Gaussian to average local vectors when displaying every Nth vector?
+        fractional : Boolean
+            display polarization fraction if true, else display polarized intensity
+        imin, pmin, pfmin : floats, optional
+            Minima for I, P, P/I respectively for where to show vectors
+        pmax : float, optional
+            Maximum for P where to show vectors
+        scale : float
+            Magnification factor for the vectors
+        color : Matplotlib color specifier
+            Color for the vectors
+        scalebar_value : None or float
+            Length for scale bar to display, or None for no label
+        scalebar_location : tuple
+            Coordinates for where to draw the scalebar, given in Axes relative coordinates
+            between 0.0-1.0.
+        scalebar_label : string
+            Allows you to override the default scalebar label
+
+        """
+
+        
+        polarization = self.p.copy()
+
+        # First smooth, if appropriate
+        if showevery != 1 and smooth:
+            from scipy.ndimage import gaussian_filter
+            polarization  = gaussian_filter(polarization, sigma=showevery/2)
+
+        # then apply constraints
+        if imin is not None: polarization[self.i <imin]  = np.nan
+        if pmin is not None: polarization[polarization <pmin]  = np.nan
+
+        if fractional: polarization /= imI
+        if pfmin is not None: polarization[polarization <pfmin]  = np.nan
+
+        vecX = polarization * np.cos(self.theta) #*-1
+        vecY = polarization * np.sin(self.theta)
+
+        # Scaling: note that if we *don't* set a scale parameters, then the
+        # matplotlib quiver function calculates an auto-scaling, crudely.
+        # We want to replicate a similar calculation here so that we can apply a more user-friendly
+        # multiplicative scaling on top of that.
+        meanp = np.nanmean(polarization)
+        sn = max(10, np.sqrt(polarization.size/showevery**2))
+        span= 1.0 # I don't really follow how this is computed inside quiver
+        default_scale = 1.8 * meanp *sn / span
+
+
+
+        # set up plot coordinates. This is meant to work consistently with imshow for this class.
+        if coords.lower().startswith('arcsec'):
+            Y, X = np.indices(self.i.shape, dtype=float)
+            X -= self['PSFCENTx']
+            Y -= self['PSFCENTY']
+            X *= _pixelscale
+            Y *= _pixelscale
+            if verbose: print "X: ", X.min(), X.max()
+        else:
+            # coordinates in pixels
+            Y, X = np.indices(self.i.shape)
+
+        Q = plt.quiver(X[::showevery, ::showevery], Y[::showevery, ::showevery], vecX[::showevery, ::showevery], vecY[::showevery, ::showevery],
+                headwidth=0, headlength=0, headaxislength=0.0, pivot='middle', color=color, edgecolor=color, 
+                scale = default_scale/scale,
+                **kwargs)
+
+        if scalebar_value is not None:
+            if scalebar_label is None:
+                if fractional:
+                    scalebar_label = "{0:2d}% pol.".format(int(np.round(scalebar_value*100)))
+                else:
+                    scalebar_label = "Pol. intensity = {0} count/sec/lenslet".format(scalebar_value)
+
+            try:
+                scalebar_xloc = scalebar_location[0]
+                scalebar_yloc = scalebar_location[1]
+            except:
+                scalebar_xloc, scalebar_yloc = 0.8, 0.95
+
+            K = plt.quiverkey(Q, scalebar_xloc, scalebar_yloc, scalebar_value, scalebar_label, coordinates='axes', labelcolor=color, labelpos='E', fontproperties={'size':scalebar_fontsize}) #, width=0.003)
+
+        else:
+            K = None
+        return (Q,K)
+
+
 #---------------------------------------------------------------
 
 class IFSData2D(IFSData):
@@ -803,7 +1057,7 @@ class IFSData2D(IFSData):
 
 
     def DisplayZooms(self, format=(3,3), size=64, vmin=0, vmax=None, scale='log', verbose=False, _right_side=False,
-            title=True):
+            title=True, **kwargs):
         """ Display zoomed in sub regions of the image 
 
         Parameters
@@ -825,7 +1079,7 @@ class IFSData2D(IFSData):
             vmax = np.nanmax(self.data)
             if verbose: print "Max value of data: "+str(vmax)
 
-        pl.clf()
+        plt.clf()
 
         if scale == 'linear':
             norm=matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
@@ -834,14 +1088,14 @@ class IFSData2D(IFSData):
             norm=matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax)
 
 
-        #fig = pl.figure(num=1, figsize=(7.1,6.9))
+        #fig = plt.figure(num=1, figsize=(7.1,6.9))
         if _right_side: 
             # subplots order is Y, X
-            fig, axarr0 = pl.subplots( format[0], format[1]*2,  figsize=(17, 7.65), num=2)
+            fig, axarr0 = plt.subplots( format[0], format[1]*2,  figsize=(17, 7.65), num=2)
             axarr = axarr0[ :, format[1]:]
         else:
-            fig, axarr = pl.subplots( format[0], format[1],  figsize=(7.98,7.65), num=2)
-            pl.subplots_adjust(wspace=0.01, hspace=0.03)
+            fig, axarr = plt.subplots( format[0], format[1],  figsize=(7.98,7.65), num=2)
+            plt.subplots_adjust(wspace=0.01, hspace=0.03)
 
 
         for ix in range(format[0]):
@@ -849,7 +1103,7 @@ class IFSData2D(IFSData):
                 subim = self.data[ pos_y[iy]-size/2:pos_y[iy]+size/2, pos_x[ix]-size/2:pos_x[ix]+size/2]
                 extent = [pos_x[ix]-size/2, pos_x[ix]+size/2, pos_y[iy]-size/2, pos_y[iy]+size/2]
 
-                axarr[format[1]-1-iy,ix].imshow(subim, norm=norm, extent=extent)
+                axarr[format[1]-1-iy,ix].imshow(subim, norm=norm, extent=extent, **kwargs)
 
                 axarr[format[1]-1-iy,ix].xaxis.set_major_locator(matplotlib.ticker.MaxNLocator(nbins=4, integer=True))
                 axarr[format[1]-1-iy,ix].yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(nbins=4, integer=True))
@@ -862,7 +1116,7 @@ class IFSData2D(IFSData):
                 axarr[format[1]-1-iy,ix].xaxis.set_ticklabels("")
 
         if title:
-            pl.suptitle("%s\n %s, %s" % (self.name, self.prism.capitalize(), self.filter), fontsize=16)
+            plt.suptitle("%s\n %s, %s" % (self.name, self.prism.capitalize(), self.filter), fontsize=16)
         return axarr
 
 
@@ -889,10 +1143,10 @@ class IFSData2D(IFSData):
         ymin = axarr[format[0]-1,format[1]-1].get_position().corners()[0,1]
         xmax = axarr[format[0]-1,format[1]-1].get_position().corners()[3,0]
         #print xmin, xmax, ymin, ymax
-        #pl.subplot(121)
+        #plt.subplot(121)
 
-        #bigax = pl.axes( (0.1, ymin, xmax-xmin, ymax))
-        bigax = pl.subplot(121)
+        #bigax = plt.axes( (0.1, ymin, xmax-xmin, ymax))
+        bigax = plt.subplot(121)
 
         bigax.imshow(self.data, norm=norm)
 
@@ -917,8 +1171,8 @@ class IFSSpectrum1D(IFSData):
 
     def plot(self, format='', clear=False, **kwargs):
         """ Plot spectrum """
-        if clear: pl.clf()
-        pl.plot(self.wavelength.ravel(), self.flux.ravel(), format, label=self.name, **kwargs)
+        if clear: plt.clf()
+        plt.plot(self.wavelength.ravel(), self.flux.ravel(), format, label=self.name, **kwargs)
 
     def DisplayZooms(self, format=(3,3), size=64, vmin=0, vmax=None, scale='log', verbose=False, _right_side=False,
             title=True):
@@ -943,7 +1197,7 @@ class IFSSpectrum1D(IFSData):
             vmax = np.nanmax(self.data)
             if verbose: print "Max value of data: "+str(vmax)
 
-        pl.clf()
+        plt.clf()
 
         if scale == 'linear':
             norm=matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
@@ -952,14 +1206,14 @@ class IFSSpectrum1D(IFSData):
             norm=matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax)
 
 
-        #fig = pl.figure(num=1, figsize=(7.1,6.9))
+        #fig = plt.figure(num=1, figsize=(7.1,6.9))
         if _right_side: 
             # subplots order is Y, X
-            fig, axarr0 = pl.subplots( format[0], format[1]*2,  figsize=(17, 7.65), num=2)
+            fig, axarr0 = plt.subplots( format[0], format[1]*2,  figsize=(17, 7.65), num=2)
             axarr = axarr0[ :, format[1]:]
         else:
-            fig, axarr = pl.subplots( format[0], format[1],  figsize=(7.98,7.65), num=2)
-            pl.subplots_adjust(wspace=0.01, hspace=0.03)
+            fig, axarr = plt.subplots( format[0], format[1],  figsize=(7.98,7.65), num=2)
+            plt.subplots_adjust(wspace=0.01, hspace=0.03)
 
 
         for ix in range(format[0]):
@@ -980,7 +1234,7 @@ class IFSSpectrum1D(IFSData):
                 axarr[format[1]-1-iy,ix].xaxis.set_ticklabels("")
 
         if title:
-            pl.suptitle("%s\n %s, %s" % (self.name, self.prism.capitalize(), self.filter), fontsize=16)
+            plt.suptitle("%s\n %s, %s" % (self.name, self.prism.capitalize(), self.filter), fontsize=16)
         return axarr
 
 
@@ -1007,10 +1261,10 @@ class IFSSpectrum1D(IFSData):
         ymin = axarr[format[0]-1,format[1]-1].get_position().corners()[0,1]
         xmax = axarr[format[0]-1,format[1]-1].get_position().corners()[3,0]
         #print xmin, xmax, ymin, ymax
-        #pl.subplot(121)
+        #plt.subplot(121)
 
-        #bigax = pl.axes( (0.1, ymin, xmax-xmin, ymax))
-        bigax = pl.subplot(121)
+        #bigax = plt.axes( (0.1, ymin, xmax-xmin, ymax))
+        bigax = plt.subplot(121)
 
         bigax.imshow(self.data, norm=norm)
 
@@ -1087,7 +1341,7 @@ class IFSwavecal(GPI_generic_data):
         """ Display one slice of wavelength solution. Utility function used in plot, PlotResolution etc """
         import gpi_utils
         if pos is not None:
-            pl.subplot(2,3,pos)
+            plt.subplot(2,3,pos)
         ax = gpi_utils.imshow_with_mouseover(data,  vmin=vmin, vmax=vmax, norm=norm, **kwargs)
         if mask is not None:
             gooddata = data[mask]
@@ -1097,18 +1351,18 @@ class IFSwavecal(GPI_generic_data):
             stdval = gooddata.std()
             #print title
             #print "Data mean=%5g +- %5g, min=%5g, max=%5g" % (meanval, stdval, minval, maxval)
-            pl.text(0.5, 0.1, "Mean=%5g +- %5g,\n min=%5g, max=%5g" % (meanval, stdval, minval, maxval), transform=ax.axes.transAxes, 
+            plt.text(0.5, 0.1, "Mean=%5g +- %5g,\n min=%5g, max=%5g" % (meanval, stdval, minval, maxval), transform=ax.axes.transAxes, 
                 horizontalalignment='center', fontsize=10)
         
-        pl.title(title)
+        plt.title(title)
 
     def _hist1(self, data, pos=None, range=None, title="Histogram", bins=20, facecolor='none', histtype='step', **kwargs):
         """ Display 1 histogram. Utility function used in PlotHistogram """
         if pos is not None:
-            pl.subplot(2,3,pos)
+            plt.subplot(2,3,pos)
         wg = np.isfinite(data)
-        pl.hist(data[wg], range=range, bins=bins, facecolor=facecolor, histtype=histtype, **kwargs)
-        pl.title(title)
+        plt.hist(data[wg], range=range, bins=bins, facecolor=facecolor, histtype=histtype, **kwargs)
+        plt.title(title)
 
  
     def plot(self):
@@ -1116,20 +1370,20 @@ class IFSwavecal(GPI_generic_data):
 
         mask = np.isfinite(self.data.sum(axis=0)) 
 
-        pl.clf()
+        plt.clf()
         self._show1(self.wavecal_ypos, 1, title='Y positions of spectra \n[pix]', vmin=0, vmax=2048, mask=mask)
         self._show1(self.wavecal_xpos, 2, title='X positions of spectra \n[pix]', vmin=0, vmax=2048, mask=mask)
         self._show1(self.wavecal_lambda0, 4, title='Initial wavelength \n[micron]', vmin=0.8, vmax=2.5, mask=mask)
         self._show1(self.wavecal_dispersion, 5, title='Dispersion \n[micron/pix]', vmin=0.01, vmax=0.02, mask=mask)
         self._show1(np.rad2deg(self.wavecal_tilt), 6, title='Tilt \n[deg]', vmin=-20, vmax=20, mask=mask)
 
-        pl.gcf().suptitle(self.name, fontsize=16)
+        plt.gcf().suptitle(self.name, fontsize=16)
 
     def plotResolution(self, vmin=30, vmax=90):
         """ Plot spectral resolution over the FOV"""
         mask = np.isfinite(self.data.sum(axis=0)) 
 
-        pl.clf()
+        plt.clf()
         self._show1(self.wavecal_lambda0/self.wavecal_dispersion/2, title='Spectral Resolution per 2 pixels', vmin=vmin, vmax=vmax, mask=mask)
 
     def plotSeparations(self, vmin=2, vmax=5):
@@ -1169,15 +1423,15 @@ class IFSwavecal(GPI_generic_data):
         xoffsets[0] = xoffset_1
         xoffsets[1] = xoffset_2
         minxoffset = np.min(xoffsets, axis=0)
-        pl.imshow(minxoffset, vmin=vmin, vmax=vmax)
-        pl.title("Minimum separation between adjacent spectra for: "+self.name)
+        plt.imshow(minxoffset, vmin=vmin, vmax=vmax)
+        plt.title("Minimum separation between adjacent spectra for: "+self.name)
 
-        cb = pl.colorbar()
+        cb = plt.colorbar()
         cb.set_label("Separation in pixels")
         cb.set_ticks([2,2.5, 3,3.5, 4,4.5, 5])
-        pl.text(20, 20, "Median: %.2f" % np.median(minxoffset[np.isfinite(minxoffset)]))
-        pl.text(200, 40, "Minimum: %.2f" % np.nanmin(minxoffset))
-        pl.text(200, 20, "Maximum: %.2f" % np.nanmax(minxoffset))
+        plt.text(20, 20, "Median: %.2f" % np.median(minxoffset[np.isfinite(minxoffset)]))
+        plt.text(200, 40, "Minimum: %.2f" % np.nanmin(minxoffset))
+        plt.text(200, 20, "Maximum: %.2f" % np.nanmax(minxoffset))
 
     
     def plotComparison(self, otherfile):
@@ -1194,7 +1448,7 @@ class IFSwavecal(GPI_generic_data):
         #mask = (self.data[0] != 0)
         mask = np.isfinite(difference.sum(axis=0)) 
 
-        pl.clf()
+        plt.clf()
         #--- Create 5 plots with 2D images showing differences of the files
         self._show1(difference[0], 1, title='Y positions of spectra \n[pix]', mask=mask, vmin=-3, vmax=3)
         self._show1(difference[1], 2, title='X positions of spectra \n[pix]', mask=mask, vmin=-1, vmax=1)
@@ -1202,7 +1456,7 @@ class IFSwavecal(GPI_generic_data):
         self._show1(difference[3], 5, title='Dispersion \n[micron/pix]', mask=mask, vmin=-0.001, vmax=0.001)
         self._show1(np.rad2deg(difference[4]), 6, title='Tilt \n[deg]', mask=mask, vmin=-3, vmax=3)
 
-        pl.gcf().suptitle("Diff between %s (%s) and %s (%s)" % ( self.name, self.priheader['DATE-OBS'], other.name, other.priheader['DATE-OBS']), fontsize=16)
+        plt.gcf().suptitle("Diff between %s (%s) and %s (%s)" % ( self.name, self.priheader['DATE-OBS'], other.name, other.priheader['DATE-OBS']), fontsize=16)
 
         #--- create one more panel showing a plotted representation of the wavelength solution
         # now read in the information the DRP uses for fitting wavelengths
@@ -1212,7 +1466,7 @@ class IFSwavecal(GPI_generic_data):
         lines = [l.strip() for l in linelist if l.startswith(self.filter)]
 
 
-        ax3 = pl.subplot(2,3,3)
+        ax3 = plt.subplot(2,3,3)
         for wavcal in [self, other]:
             # find center pixel
             radius = np.sqrt((wavcal[0]-1024)**2+(wavcal[1]-1024)**2)
@@ -1238,7 +1492,7 @@ class IFSwavecal(GPI_generic_data):
 
             _log.info("Central spectrum goes from :"+ str([x0,y0]) )
             _log.info("                      to   :"+str([xend,yend]) )
-            plotline = pl.plot([x0,xend],[y0,yend], label=wavcal['DATE-OBS'])[0]
+            plotline = plt.plot([x0,xend],[y0,yend], label=wavcal['DATE-OBS'])[0]
             # get current color of plot line here
             col = plotline.get_color()
 
@@ -1254,9 +1508,9 @@ class IFSwavecal(GPI_generic_data):
                     dist = (float(wavelen)-lambda0)/disp0
                     xend = x0 + dist * np.sin(tilt0)
                     yend = y0 + dist * np.cos(tilt0)
-                    plotline = pl.plot(xend,yend,marker=marker, color=col )
+                    plotline = plt.plot(xend,yend,marker=marker, color=col )
                     if wavcal is self:
-                        pl.text(xend+2, yend, source +" "+wavelen)
+                        plt.text(xend+2, yend, source +" "+wavelen)
 
                 
         ax3.set_xbound(1020, 1040)
@@ -1268,7 +1522,7 @@ class IFSwavecal(GPI_generic_data):
         ax3.grid(False, which='major')
         ax3.set_aspect('equal')
     
-        pl.legend(loc='lower left', frameon=False)
+        plt.legend(loc='lower left', frameon=False)
 
         stop()
 
@@ -1276,15 +1530,15 @@ class IFSwavecal(GPI_generic_data):
  
     def plotHistograms(self, erase=True, suptitle=True, **kwargs):
         """ Display histograms of the quantities of interest in a wavelength solution """
-        if erase: pl.clf()
-        pl.subplots_adjust(hspace=0.4)
+        if erase: plt.clf()
+        plt.subplots_adjust(hspace=0.4)
         self._hist1(self.wavecal_ypos, 1, title='Y positions of spectra \n[pix]', range=[0,2048], **kwargs)
         self._hist1(self.wavecal_xpos, 2, title='X positions of spectra \n[pix]', range=[0,2048], **kwargs)
         self._hist1(self.wavecal_lambda0, 4, title='Initial wavelength \n[micron]', range=[0.8, 2.5], **kwargs)
         self._hist1(self.wavecal_dispersion, 5, title='Dispersion \n[micron/pix]', range=[0.01, 0.02], **kwargs)
         self._hist1(np.rad2deg(self.wavecal_tilt), 6, title='Tilt \n[deg]', range=[-20,20], **kwargs)
 
-        if suptitle: pl.gcf().suptitle(self.name, fontsize=16)
+        if suptitle: plt.gcf().suptitle(self.name, fontsize=16)
 
 
 
@@ -1637,7 +1891,10 @@ class DataCollection(object):
 #-------------------------------------------------------------------------------
 
 
-def logsheet(dir=".", output="./ifs_files_log.txt", pattern="ifs*.fits"):
+def logsheet(dir=".", output="./ifs_files_log.txt", pattern="S*.fits"):
+    """ Generate a log sheet summarizing all the individual exposures in this directory
+
+    """
     import re
     files_all = glob.glob(pattern)
     # ignore individual reads
@@ -1646,13 +1903,96 @@ def logsheet(dir=".", output="./ifs_files_log.txt", pattern="ifs*.fits"):
 
     for f in files:
         info = IFSData(f)
-        try: 
             #stop()
-            print "%-20s\t%s\t%s\t%.2f\t%s\t%s" % (info.name, info.filter, info.lyot , info.itime, info.apodizer, info._priKeyword('TARGET'))
-        except:
-            print "%-20s\t%s\t%s\t%s\t%s\t%s" % (info.name, info.filter, info.lyot , str(info.itime), info.apodizer, info._priKeyword('TARGET'))
+        if 'E' in f:
+            obsclass = '-----'
+            obstype = '-----'
+            objectname = '-----'
+        else:
+            obsclass = info['OBSCLASS']
+            obstype = info['OBSTYPE']
+            objectname=info['OBJECT']
+
+        print "{0:20s}\t{1:12s}\t{2:10s}\t{3:2s}\t{4:10s}\t{5:8.2f}\t{6:s}".format(info.name, obsclass, obstype, info.filter, info['OBSMODE'] , info.itime, objectname)
 
 
+
+def logsheet2(dir=".", output="gpi_ifs_files_summary.txt", save=False, pattern="S*.fits"):
+    """ Generate a summary of the GPI FITS files present in this directory
+    """
+
+    import re
+    files_all = glob.glob(pattern)
+    # ignore individual reads
+    files = [f for f in files_all if re.search("_[0-9][0-9][0-9].fits", f) is None]
+
+
+    date = files[0][0:9]
+    header1 = "# ======================= GPI Files Summary for {0} ========================".format(date)
+    #header2 = "#          {0:13s}\t{1:12s}  {2:10s}  {3:2s}  {4:10s}  {5:8s}  {6:s}".format("Files","ObsClass","ObsType","Filt","Prism" "Obsmode","I.Time",'Object')
+    header2 = "#          {0:13s}\t{1:10s}\t{2:10s}{3:2s} {7:4s}  {4:10s}    {5:8s} {6:s}".format("Files","ObsClass","ObsType","Filt","Obsmode","IntTime",'Object', 'Prism', '')
+        #this_file_summary =       "{1:10s}\t{2:10s}  {3:2s} {7:4s}  {4:10s}  {5:8.1f}{8:3s}  {6:s}".format(short_fn, obsclass, obstype, info.filter, info['OBSMODE'] , info.itime, objectname, disperser, coadds)
+    print header1
+    print header2
+
+    if save:
+        fp = open(output,'w')
+        fp.write(header1+"\n")
+        fp.write(header2+"\n")
+
+    startfile = ''
+    prevfile = ''
+    stopfile = ''
+
+    last_file_summary = ''
+
+    files.append(files[0]) # add a dummy line at the end to ensure the code executes to print the last set of data
+
+    for f in files:
+        info = IFSData(f)
+
+        short_fn = f[9:14]
+        if startfile == '': startfile=short_fn
+
+
+        if 'E' in f:
+            obsclass = '-----'
+            obstype = '-----'
+            objectname = '-----'
+        else:
+            obsclass = info['OBSCLASS']
+            obstype = info['OBSTYPE']
+            objectname=info['OBJECT']
+
+            if objectname =='GCALflat':
+                objectname ="GCAL flat: "+info['GCALLAMP']+", "+info['GCALFILT']
+                if info['GCALLAMP'] == 'IRhigh' and info['GCALSHUT'] == 'CLOSED': objectname='GCAL flat: CLOSED'
+        disperser = 'Spec' if info.disperser=='PRISM' else 'Pol'
+
+
+        coadds = '*{0:2d}'.format(info['COADDS']) if info['COADDS'] > 1 else '   '
+        this_file_summary = "{1:10s}\t{2:10s}  {3:2s} {7:4s}  {4:10s}  {5:8.1f}{8:3s}  {6:s}".format(short_fn, obsclass, obstype, info.filter, info['OBSMODE'] , info.itime, objectname, disperser, coadds)
+
+        if info['ABORTED']: this_file_summary += "  **ABORTED**  "
+        if (this_file_summary != last_file_summary) and (last_file_summary != ''):
+
+            spacer = '-' 
+            if startfile != prevfile:
+                files = "{0:5s} - {1:5s}".format(startfile, prevfile)
+            else:
+                files = "{0:5s}   {1:5s}".format(startfile, '')
+            line = "{2:8s}  {0:s}\t{1:s}".format(files, last_file_summary, date)
+            print  line
+            if save: fp.write(line+"\n")
+            startfile = short_fn
+
+        last_file_summary = this_file_summary
+        prevfile = short_fn
+
+    # and don't forget to print the last line
+
+
+    if save: fp.close()
 
 __all__ = [IFSData, logsheet]
 

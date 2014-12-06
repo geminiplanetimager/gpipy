@@ -7,6 +7,19 @@ Or should this be GPI Python Infrastructure (GPIPI?) perhaps.
 """
 
 
-import data
+#import data
+from data import read, IFSData, IFSSpectralCube,IFSPolarimetryPair,IFSStokesCube,DataCollection
 import pipeline
 import utils
+import plotutils
+
+
+# Only try to import the GUI classes if wx is present.
+try:
+    import wx as _wx
+    _HAVE_WX = True
+except:
+    _HAVE_WX = False
+
+if _HAVE_WX:
+    import guis

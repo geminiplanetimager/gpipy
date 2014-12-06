@@ -1,16 +1,14 @@
-#!/usr/bin/env python
-#/opt/python2.7.2/bin/python
 import os
 import sys
 
-import wx
-from ObjectListView import ObjectListView, GroupListView, ColumnDefn
-
-import gpi_pipeline
 import numpy as np
+import wx
+
+
+from . import pipeline
 
 import logging
-_log = logging.getLogger('gpicaldb')
+_log = logging.getLogger('gpipy')
 
 
  
@@ -27,6 +25,12 @@ class CalDBViewer(wx.Frame):
         Based on objectlistview's simpleExample1.py
         
         """
+        try:
+            from ObjectListView import ObjectListView, GroupListView, ColumnDefn
+        except:
+            raise ImportError("You need to install the ObjectListView package for wxpython to use this GUI.")
+
+
         wx.Frame.__init__(self, parent=parent, id=id, size=size, title="GPI Calibration DB Viewer")
 
         self.InitModel()
@@ -38,7 +42,7 @@ class CalDBViewer(wx.Frame):
         """
 
         _log.info("Querying Calibration DB for files...")
-        self.db = gpi_pipeline.GPICalDB()
+        self.db = pipeline.GPICalDB()
         _log.info("Reading in FITS headers of calibration files...")
         self.files = self.db.select_calfiles(return_objects=True)
         self.selected = np.arange(len(self.files))
@@ -191,10 +195,9 @@ class CalDBViewer(wx.Frame):
          self.myOlv.SetShowGroups( True)
 
 
-#----------------------------------------------------------------------
-# Run the program
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+def run_CalDBViewer():
+    """ Run a CalDBViewer window as a wxpython app 
+    """
     app = wx.App(False)
     frame = CalDBViewer()
     frame.Show()
