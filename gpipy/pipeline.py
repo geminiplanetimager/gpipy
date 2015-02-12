@@ -315,7 +315,7 @@ class GPIPrimitivesConfig(object):
         deprecated : bool
             Include primitives which have been deprecated?
         """
-        all_primitives = self.primitives_names(testing=testing, deprecated=deprecated)
+        all_primitives = self.primitives(testing=testing, deprecated=deprecated)
 
         all_primitives=[a for a in all_primitives if not(a.idlfunc.startswith('test')) ]
 
@@ -334,7 +334,7 @@ class GPIPrimitivesConfig(object):
         #stop()
 
     def unique_types(self):
-        all_primitives = self.primitives_names()
+        all_primitives = self.primitives()
         types = [p.type for p in all_primitives]
         return set(types)
 
