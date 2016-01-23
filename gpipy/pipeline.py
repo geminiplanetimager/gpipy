@@ -4,7 +4,10 @@ import collections
 import numpy as np
 import matplotlib.pyplot as pl
 import matplotlib
-import pyfits
+try:
+    import astropy.io.fits as fits
+except:
+    import pyfits as fits
 from IPython.core.debugger import Tracer; stop = Tracer()
 import logging
 from . import utils as gpi_utils
