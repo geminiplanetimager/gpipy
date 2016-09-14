@@ -8,7 +8,6 @@ try:
     import astropy.io.fits as fits
 except:
     import pyfits as fits
-from IPython.core.debugger import Tracer; stop = Tracer()
 import logging
 from . import utils as gpi_utils
 
@@ -332,8 +331,6 @@ class GPIPrimitivesConfig(object):
         else:
             for i in sorter:
                 print("{0:7.3f}    {1}".format(float(orders[i]), names[i]))
-
-        #stop()
 
     def unique_types(self):
         all_primitives = self.primitives()
@@ -832,7 +829,11 @@ class Recipe(object):
         return dataset[0]
 
     @property
-    def name(self): return self._tree.getroot().attrib['name']
+    def name(self):
+        try:
+            return self._tree.getroot().attrib['name']
+        except KeyError:
+            return self._tree.getroot().attrib['Name']
     @name.setter
     def name(self,value):  self._tree.getroot().attrib['name'] = value
 
@@ -1062,12 +1063,12 @@ def validate_templates():
 
 #--------------------------------------------------------------------------------
 class PipelineDriver(object):
-    """ Object class for driving the GPI DRP """
+    """ Object class for controlling the GPI DRP in various ways"""
 
     def __init__(self, indir = None, outdir=None):
 
-        if indir is None: indir=gpi_utils.expand_path(os.getenv('GPI_RAW_DATA_DIR'))
-        if outdir is None: outdir=gpi_utils.expand_path(os.getenv('GPI_DRP_OUTPUT_DIR'))
+        if indir is None: indir=GPIConfig().get_directory('GPI_RAW_DATA_DIR')
+        if outdir is None: outdir=GPIConfig().get_directory('GPI_REDUCED_DATA_DIR')
 
 
         if not indir.endswith(os.sep):
@@ -1080,12 +1081,13 @@ class PipelineDriver(object):
 
     def scan_templates(self):
         """Scan all the templates in the templates directory into memory """
-        templatedir = gpi_utils.expand_path(os.getenv('GPI_DRF_TEMPLATES_DIR'))
+        import glob
+        templatedir = GPIConfig().get_directory('GPI_DRP_TEMPLATES_DIR')
         templatefiles = glob.glob(templatedir+os.sep+"*.xml")
         templates = {}
 
         for tfile in templatefiles:
-            tdrf = DRF(tfile)
+            tdrf = Recipe(tfile)
             _log.info("  Loaded template =%s, %s" % (tfile, tdrf.name))
             templates[tdrf.name] = tdrf
 
@@ -1114,6 +1116,53 @@ class PipelineDriver(object):
         for filter in ['Y','J','H','K1','K2']:
             for prism in ['PRISM','WOLLASTON']:
                 pass
+
+    def run_recipe(self,recipepath, rescanDB=False):
+        """ Run a single recipe
+
+        Parameters
+        -------------
+        recipepath : string
+            Filename of recipe you want to run
+        rescanDB : bool
+            Rescan Calib DB before running the recipe? Default is false.
+
+        Returns a tuple containing (status, outrecipe, files)
+        where status is a string "success" or "failed"
+        outrecipe is the name of the recipe file after the pipeline is done with it
+        files is a list of the files written out by this receipe
+        """
+
+
+        import subprocess
+
+        if not os.path.exists(recipepath):
+            raise IOError("Recipe does not exist: {}".format(recipepath))
+
+        opt_args = ", /rescanDB" if rescanDB else ""
+        subcall = "idl -e \"gpi_launch_pipeline, single=\'{}\', /nogui {} \"".format(recipepath, opt_args)
+
+        print(subcall)
+
+        recipeout = subprocess.check_output(subcall, shell = True)
+        splitout = recipeout.split('\n')
+        print(splitout)
+
+        donewith = [line for line in splitout if "Done with" in line]
+        fileout= [line for line in splitout if "File output to" in line]
+
+        print("donewith: ")
+        print(donewith)
+
+        status = donewith[0].split()[-1]
+        out_recipe = donewith[0].split()[-3]
+
+        print("fileout: ")
+        print(fileout)
+        files = [line.split()[-1] for line in fileout]
+
+        return (status, out_recipe, files)
+
 
 
 
