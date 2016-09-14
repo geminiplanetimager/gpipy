@@ -8,10 +8,8 @@ Or should this be GPI Python Infrastructure (GPIPI?) perhaps.
 
 
 #import data
-from data import read, IFSData, IFSSpectralCube,IFSPolarimetryPair,IFSStokesCube,DataCollection
-import pipeline
-import utils
-import plotutils
+from .data import read, IFSData, IFSSpectralCube,IFSPolarimetryPair,IFSStokesCube,DataCollection
+from .pipeline import *
 
 
 # Only try to import the GUI classes if wx is present.

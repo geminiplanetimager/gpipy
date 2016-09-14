@@ -15,7 +15,7 @@ Pretty much a catch-all miscellaneous bin.
 
 """
 
-# Functions for JD <-> GD conversion, 
+# Functions for JD <-> GD conversion,
 # courtesy of Ian Crossfield at http://www.astro.ucla.edu/~ianc/python/_modules/date.html
 """
 Functions for handling dates.
@@ -57,14 +57,12 @@ def gd2jd(*date): #, verbose=False):
     of the date should be float)
     """
     verbose=False
-    if verbose: print date
-    #print date[0]
-    #date = date[0]
+    if verbose: print(date)
 
     date = list(date)
 
     if len(date)<3:
-        print "You must enter a date of the form (2009, 02, 25)!"
+        print("You must enter a date of the form (2009, 02, 25)!")
         return -1
     elif len(date)==3:
         for ii in range(3): date.append(0)
@@ -117,13 +115,12 @@ def gd2jd(*date): #, verbose=False):
         fracyear=yyyy+daysum/366
     else:
         fracyear=yyyy+daysum/365
-    if verbose: 
-        print yyyy,mm,dd,hh,min,sec
-        print "UT="+`UT`
-        print "Fractional day: %f" % fracday
-        print "\n"+months[mm-1]+" %i, %i, %i:%i:%i UT = JD %f" % (dd, yyyy, hh, min, sec, JD),
-        print " = " + `fracyear`+"\n"
-    # print dd,mm,yyyy, hh,min,sec, UT
+    if verbose:
+        print(yyyy,mm,dd,hh,min,sec)
+        print("UT={}".format(UT))
+        print("Fractional day: %f" % fracday)
+        print("\n"+months[mm-1]+" %i, %i, %i:%i:%i UT = JD %f" % (dd, yyyy, hh, min, sec, JD),)
+        print(" = {}\n".format(fracyear))
 
 
 
@@ -139,7 +136,7 @@ def jd2gd(jd, verbose=False):
 
     2009-02-15 13:36 IJC: Converted to importable, callable function
     """
-    
+   
     jd=jd+0.5
     Z=int(jd)
     F=jd-Z
@@ -183,9 +180,9 @@ def jd2gd(jd, verbose=False):
     hh =  hh-(hh%1.0)
     min =  min-(min%1.0)
 
-    if verbose: 
-        print str(jd)+" = "+str(months[mm-1])+ ',' + str(dd) +',' +str(yyyy)
-        print string.zfill(h,2)+":"+string.zfill(min,2)+":"+string.zfill(sec,2)+" UTC"
+    if verbose:
+        print(str(jd)+" = "+str(months[mm-1])+ ',' + str(dd) +',' +str(yyyy))
+        print(string.zfill(h,2)+":"+string.zfill(min,2)+":"+string.zfill(sec,2)+" UTC")
 
     return (yyyy, mm, dd, hh, min, sec)
 
@@ -224,7 +221,7 @@ def is_integer(value):
 
 def imshow_with_mouseover(image, ax=None,  *args, **kwargs):
     """ Wrapper for pyplot.imshow that sets up a custom mouseover display formatter
-    so that mouse motions over the image are labeled in the status bar area 
+    so that mouse motions over the image are labeled in the status bar area
     with pixel numerical value as well as X and Y coords.
 
     Why this behavior isn't the matplotlib default, I have no idea...
@@ -244,7 +241,7 @@ def imshow_with_mouseover(image, ax=None,  *args, **kwargs):
     #pixx = (x - imext[0])/(imext[1]-imext[0])*imsize[1]
     #pixy = (y - imext[2])/(imext[3]-imext[2])*imsize[0]
     # and be sure to clip appropriatedly to avoid array bounds errors
-    #report_pixel = lambda x, y : 
+    #report_pixel = lambda x, y :
     def report_pixel(x,y):
         pixvalue = aximage[np.floor( (y - imext[2])/(imext[3]-imext[2])*imsize[0]  ).clip(0,imsize[0]-1),\
                         np.floor( (x - imext[0])/(imext[1]-imext[0])*imsize[1]  ).clip(0,imsize[1]-1)]
@@ -268,17 +265,15 @@ def idl_path_find_file(functionname):
         if top_path.startswith('+'):
             top_path = top_path[1:]
             top_path = expand_path(top_path)
-            #print top_path
             for dirpath, subdirnames, filenames in os.walk(top_path):
                 if looking_for in filenames:
                     return os.path.join(dirpath, looking_for)
         else:
             top_path = expand_path(top_path)
-            #print top_path, "*"
             filename = glob.glob(os.path.join(top_path,'*.pro'))
             if looking_for in filenames:
                 return os.path.join(dirpath, looking_for)
-        
+       
     return None
 
 

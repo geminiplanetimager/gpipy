@@ -90,7 +90,6 @@ class GPIConfig(object):
                 except:
                     _log.debug("Could not parse line: '%s' in file %s" % (line, filename))
                     pass
-            #print self.settings
 
 
         if os.path.exists(global_settings_file):
@@ -404,7 +403,7 @@ class Primitive(object):
 
         def get_header_setting(starttext):
             if header is None:
-                print "No header for "+self.name+", "+self.idlfunc
+                print("No header for "+self.name+", "+self.idlfunc)
                 return "Unknown"
             for line in header:
                 if starttext in line:
@@ -688,9 +687,8 @@ class GPICalDB(object):
         items = self._sort(items, sortby)
 
         for line in items :
-            #print line
             gd = gpi_utils.jd2gd(line['JD'])
-            print "%30s\t%20s\t%8s\t%6.1f\t%04d-%02d-%02d %2d:%02d" % (line['FILENAME'], line['TYPE'], line['PRISM']+"-"+line['FILTER'], line['ITIME'],gd[0], gd[1],gd[2],gd[3],gd[4])
+            print("%30s\t%20s\t%8s\t%6.1f\t%04d-%02d-%02d %2d:%02d" % (line['FILENAME'], line['TYPE'], line['PRISM']+"-"+line['FILTER'], line['ITIME'],gd[0], gd[1],gd[2],gd[3],gd[4]))
 
     def _sort(self, items, sortby='itime'):
 
@@ -725,19 +723,19 @@ class GPICalDB(object):
 
 
         if by.lower() =='type':
-            print " *****  Darks ***** "
+            print(" *****  Darks ***** ")
             self._describe( self.select_calfiles(caltype='Dark File', return_mask=True))
-            print ""
-            print " *****  Wave Cals ***** "
+            print("")
+            print(" *****  Wave Cals ***** ")
             self._describe( self.select_calfiles(caltype='Wavelength Solution Cal File', return_mask=True))
-            print ""
-            print " ***** Flats ***** "
+            print("")
+            print(" ***** Flats ***** ")
             self._describe( self.select_calfiles(caltype='Flat field', return_mask=True))
         elif by.lower() == 'date':
             dates = list(self.unique_datestrs)
             dates.sort()
             for d in dates:
-                print " ***** %s ***** " % d
+                print(" ***** %s ***** " % d)
                 self._describe( self.select_calfiles(datestr=d, return_mask=True))
  
 
@@ -1049,15 +1047,15 @@ def validate_templates():
 
     for template_filename in templates:
         rec = Recipe(template_filename)
-        print "Validating Recipe: "+rec.name
+        print("Validating Recipe: "+rec.name)
 
         for prim in rec.primitives_names:
             if prim not in avail_primitives:
-                print "    In template: "+template_filename
-                print "    WARNING: primitive not found for '{0}' ".format(prim)
+                print("    In template: "+template_filename)
+                print("    WARNING: primitive not found for '{0}' ".format(prim))
 
 
-            print prim.argument_names
+            print(prim.argument_names)
 
 
  
@@ -1146,7 +1144,7 @@ if __name__ == "__main__":
         try:
             idl.pro('gpipiperun', nogui=res.nogui, single=res.single, verbose=res.verbose, rescan=res.rescanCalDB)
         except IOError:
-            print "IDL session exited"
+            print("IDL session exited")
     else:
         logging.basicConfig(level=logging.INFO)
         C = GPIConfig()

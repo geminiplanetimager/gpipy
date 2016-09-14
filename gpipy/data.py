@@ -19,12 +19,12 @@ GPI Data File interface
 
 Various Pythonic, object interfaces to GPI data files
 
-Simple Usage: 
+Simple Usage:
     >>> dat = gpidata.read('somefilename.fits')
 
 The type of object that is returned will vary depending on what kind of file you are loading; there are subclasses for
-2D and 3D GPI files, polarimetry data, wavelength calibrations. What you can do with a gpidata object depends on the subclass. 
-At a minimum you can access *the most commonly used* keywords as attributes: 
+2D and 3D GPI files, polarimetry data, wavelength calibrations. What you can do with a gpidata object depends on the subclass.
+At a minimum you can access *the most commonly used* keywords as attributes:
 
     >>> dat.filter
     'H'
@@ -38,9 +38,9 @@ There is also a DataCollection class that lets you manipulate and query large gr
     [numpy ndarray of all the itimes for all those files]
 
 
-The DataCollection.ParseToRecipes()  function replicates much of 
-the functionality of the GPI Data Pipeline's Data Parser. It will generate 
-recipes to reduce your data. 
+The DataCollection.ParseToRecipes()  function replicates much of
+the functionality of the GPI Data Pipeline's Data Parser. It will generate
+recipes to reduce your data.
 
 """
 #-------- Package constants
@@ -52,8 +52,8 @@ _pixelscale=0.01414
 
 def read(filename, loadData=True, verbose=False, **kwargs):
     """ Open a GPI data file and return it as an object.
-    
-    This is a factory function that returns an object 
+
+    This is a factory function that returns an object
     of the most specific appropriate type (e.g. IFSSpectralCube, IFSStokesCube etc)
     depending on the header keywords found therein.
 
@@ -63,7 +63,7 @@ def read(filename, loadData=True, verbose=False, **kwargs):
     >>> df
     <instance of gpidata.IFSSpectralCube>
 
-    
+
     Parameters
     ----------
     loadData : bool
@@ -71,8 +71,8 @@ def read(filename, loadData=True, verbose=False, **kwargs):
         If False, only the headers are loaded.
 
     verbose : bool
-        Print verbose output about file type determination. 
-    
+        Print verbose output about file type determination.
+
 
     """
     head = fits.getheader(filename,ext=0)
@@ -88,7 +88,7 @@ def read(filename, loadData=True, verbose=False, **kwargs):
             return IFSwavecal(filename, loadData=loadData, **kwargs)
     except: pass
 
-    try: 
+    try:
         if exthead['NAXIS'] == 3 and 'PRISM' in head['DISPERSR']:
             if verbose: _log.info("File %s appears to be a Spectral Data Cube" % filename)
             return IFSSpectralCube(filename, loadData=loadData, **kwargs)
@@ -137,7 +137,7 @@ class GPI_generic_data(object):
         If True, load data of the file. If False, just load the headers.
         Default is True. Note that if you select False then later attempt
         to access the data attribute, the data will be loaded at that time.
-        Thus you can lazily access data while minimizing memory overhead. 
+        Thus you can lazily access data while minimizing memory overhead.
 
 
     """
@@ -162,7 +162,7 @@ class GPI_generic_data(object):
             self._sci_ext = 'SCI'
         else:
             self._sci_ext = 0
- 
+
     def _loadData(self):
         """ Load the data in a file """
         self._HDUlist= fits.open(self.abspath)
@@ -170,7 +170,7 @@ class GPI_generic_data(object):
 
 
     def __repr__(self):
-        return "<%s.%s : %s>" % (self.__class__.__module__, self.__class__.__name__, self.name) 
+        return "<%s.%s : %s>" % (self.__class__.__module__, self.__class__.__name__, self.name)
     ### Data properties ###
     @property
     def data(self):
@@ -195,7 +195,7 @@ class GPI_generic_data(object):
     @shape.setter
     def shape(self):
         self.data.shape = value
- 
+
     @property
     def priheader(self):
         return self._HDUlist[0].header
@@ -221,7 +221,7 @@ class GPI_generic_data(object):
     def _extKeyword(self, keyword, docstr=''):
         #def actualfn(self, keyword):
             docstr
-            try: 
+            try:
                 return self.extheader[keyword]
             except:
                 return None
@@ -229,7 +229,7 @@ class GPI_generic_data(object):
     def _priKeyword(self, keyword, docstr=""):
         #def actualfn(self, keyword):
             docstr
-            try: 
+            try:
                 return self.priheader[keyword]
             except:
                 return None
@@ -256,12 +256,12 @@ class GPI_generic_data(object):
             if val.startswith('DISP_'): val = val.split('_')[1]
         except: pass
         return val
- 
+
     disperser=prism
     @property
     def object(self):
         return self._priKeyword('OBJECT', '')
- 
+
     @property
     def lyot(self):
         val = self._priKeyword('LYOTMASK', 'Lyot Mask in IFS')
@@ -269,7 +269,7 @@ class GPI_generic_data(object):
             if val.startswith('LYOT_'): val = val.split('_')[1]
         except: pass
         return val
- 
+
     @property
     def occulter(self):
         return self._priKeyword('OCCULTER', 'Occulter FPM Mask in Cal')
@@ -280,7 +280,7 @@ class GPI_generic_data(object):
             if val.startswith('APOD_'): val = val.split('_')[1]
         except: pass
         return val
- 
+
     @property
     def filetype(self):
         return self._priKeyword('FILETYPE', 'Type of GPI Data File')
@@ -302,7 +302,7 @@ class GPI_generic_data(object):
         return val if val is not None else 1
     @property
     def readmode(self):
-        
+
         val = self._extKeyword('SAMPMODE')
         readmodes_table = {None: 'Unknown', 1:'single', 2: 'CDS', 3:'MCDS', 4:'UTR'}
         try:
@@ -318,7 +318,7 @@ class GPI_generic_data(object):
         import os
         import xlrd
 
-        print "Now verifying "+self.name
+        print("Now verifying "+self.name)
         c = gpi_pipeline.GPIConfig()
         fn = os.path.join(c['GPI_DRP_CONFIG_DIR'], 'keywordconfig.txt')
         keywordlist = [t.strip().split('\t') for t in open(fn).readlines()]
@@ -344,13 +344,13 @@ class GPI_generic_data(object):
             mandatory=(mandatory_or_optional == 'Mandatory')
             extension = xls.cell_value(i,3)
             keywordsrc = xls.cell_value(i,4)
-            if verbose: print "Verifying ", (keywordname, extension, mandatory)
+            if verbose: print("Verifying ", (keywordname, extension, mandatory))
 
             if extension=='Extension' or extension=='Ext.':
                 present = keywordname in self._HDUlist[1].header
-            elif extension=='PHU': 
+            elif extension=='PHU':
                 present = keywordname in self._HDUlist[0].header
-            elif extension=='Both' or extension=='PHU & Ext.': 
+            elif extension=='Both' or extension=='PHU & Ext.':
                 present = ((keywordname in self._HDUlist[0].header)  and
                          (keywordname in self._HDUlist[1].header))
 
@@ -365,7 +365,7 @@ class GPI_generic_data(object):
                         u'double':float, u'real':float, u'integer':int}
                 req_type = req_types[required_type_name]
                 if not isinstance(value, req_type):
-                    print ("ERROR: Incorrect data type for %s: found %s but expected %s\t\t(source=%s)" % (keywordname, type(value).__name__, required_type_name, keywordsrc))
+                    print("ERROR: Incorrect data type for %s: found %s but expected %s\t\t(source=%s)" % (keywordname, type(value).__name__, required_type_name, keywordsrc))
                     results['invalidtypes'].append(keywordname)
                     valid=False
 
@@ -374,14 +374,11 @@ class GPI_generic_data(object):
                     allowed_values = [str(i).strip() for i in value.split('|')]
                     if value not in allowed_values:
                         valid=False
-                        print ("ERROR: Incorrect data value for %s: found %s but that is not an allowed value.\t\t(source=%s)" % (keywordname, value, keywordsrc))
+                        print("ERROR: Incorrect data value for %s: found %s but that is not an allowed value.\t\t(source=%s)" % (keywordname, value, keywordsrc))
                         value_bad+=1
                     else:
-                        if verbose: print "Verified value OK for %s" % keywordname
+                        if verbose: print("Verified value OK for %s" % keywordname)
                         value_ok+=1
-
-                
-                
 
 
 
@@ -390,7 +387,7 @@ class GPI_generic_data(object):
                     goodkeywordct+=1
                 else:
 
-                    print "ERROR: mandatory keyword %s is missing from the %s header\t\t(source=%s)" % (keywordname,extension, keywordsrc)
+                    print("ERROR: mandatory keyword %s is missing from the %s header\t\t(source=%s)" % (keywordname,extension, keywordsrc))
 
                     missingkeywordct+=1
                     results['missingkeywords'].append(keywordname)
@@ -399,24 +396,24 @@ class GPI_generic_data(object):
                     optionalkeywordct+=1
                     results['optionalkeywords'].append(keywordname)
 
-        print "Verified %d mandatory keywords and %d optional keywords present. %d mandatory keywords missing." % (goodkeywordct, optionalkeywordct, missingkeywordct)
-        print "Verified value OK for %d keywords with defined acceptable values. Invalid values found for %d keywords." % (value_ok, value_bad)
+        print("Verified %d mandatory keywords and %d optional keywords present. %d mandatory keywords missing." % (goodkeywordct, optionalkeywordct, missingkeywordct))
+        print("Verified value OK for %d keywords with defined acceptable values. Invalid values found for %d keywords." % (value_ok, value_bad))
         if return_info: return results
 
     def extractRecipe(self):
         """ Given a pipeline-reduced image which has a Recipe embedded in its
         header history, extract a copy of that recipe for re-use
 
-        Returns the recipe as a string. 
+        Returns the recipe as a string.
         TODO: also add option for writing to disk as ASCII file?
         """
         if fits.__name__ == 'astropy.io.fits':
             import distutils.version as ver
 
-            try: 
-                if not ver.LooseVersion(fits.__version__) > ver.LooseVersion('0.2') : 
+            try:
+                if not ver.LooseVersion(fits.__version__) > ver.LooseVersion('0.2') :
                     raise ImportError("extractRecipe requires astropy >= 0.2 (or pyfits >= 3.1)")
-            except: pass 
+            except: pass
 
         else:
             if float(fits.__version__ ) < 3.1: raise ImportError("extractRecipe requires pyfits >= version 3.1 (or astropy >= 0.2)")
@@ -466,8 +463,8 @@ class IFSData(GPI_generic_data):
         new = self.Copy()
         if np.isscalar(other):
             new.name += " + "+str(other)
-            new.HDUlist[self._sci_ext].data += other 
-        elif isinstance(other, IFSData) : 
+            new.HDUlist[self._sci_ext].data += other
+        elif isinstance(other, IFSData) :
             new.name = self.name +" + "+other.name
             new.data = self.data - other.data
         return new
@@ -476,8 +473,8 @@ class IFSData(GPI_generic_data):
         new = self.Copy()
         if np.isscalar(other):
             new.name += " - "+str(other)
-            new.data -= other 
-        elif isinstance(other, IFSData) : 
+            new.data -= other
+        elif isinstance(other, IFSData) :
             new.name = self.name +" - "+other.name
             new.data = self.data - other.data
         return new
@@ -486,8 +483,8 @@ class IFSData(GPI_generic_data):
         new = self.Copy()
         if np.isscalar(other):
             new.name += " * "+str(other)
-            new.data *= other 
-        elif isinstance(other, IFSData) : 
+            new.data *= other
+        elif isinstance(other, IFSData) :
             new.name = self.name +" * "+other.name
             new.data = self.data * other.data
         return new
@@ -495,8 +492,8 @@ class IFSData(GPI_generic_data):
         new = self.Copy()
         if np.isscalar(other):
             new.name += " / "+str(other)
-            new.data /= other 
-        elif isinstance(other, IFSData) : 
+            new.data /= other
+        elif isinstance(other, IFSData) :
             new.name = self.name +" / "+other.name
             new.data = self.data / other.data
         return new
@@ -533,7 +530,7 @@ class IFSSpectralCube(IFSData):
         return (np.arange(self['NAXIS3']) - (crpix3-1))*cd3 + self['CRVAL3']
 
     def ExtractSpectrum(self, center=None, full=None, radius=10, method='mean'):
-        """ Extract a 1D spectrum from a datacube. 
+        """ Extract a 1D spectrum from a datacube.
 
         Properties
         ------------
@@ -575,9 +572,9 @@ class IFSSpectralCube(IFSData):
             myspec = np.zeros(self.data.shape[0])
             for i in range(self.data.shape[0]):
                 myspec[i] = combinefunc(self.data[i][wg])
-     
+
             #raise NotImplementedError('not yet...')
-            
+
         return myspec
 
 
@@ -613,7 +610,7 @@ class IFSSpectralCube(IFSData):
         popt, pcov = scipy.optimize.curve_fit(gaussian, self.wavelengths, spec, p0=initial_guess, sigma=spec_uncert)
 
         plt.plot(self.wavelengths, gaussian(self.wavelengths, *popt), "r--")
-        plt.text(popt[0]+0.01, popt[2]*0.95, "Center: %.3f $\mu m \pm $ %.3f \nFWHM: %.3f $\mu m \pm $ %.3f" % 
+        plt.text(popt[0]+0.01, popt[2]*0.95, "Center: %.3f $\mu m \pm $ %.3f \nFWHM: %.3f $\mu m \pm $ %.3f" %
                 (popt[0], np.sqrt(pcov[0,0]), popt[1], np.sqrt(pcov[1,1])))
         #stop()
 
@@ -654,7 +651,7 @@ class IFSSpectralCube(IFSData):
         popt, pcov = scipy.optimize.curve_fit(gaussian, self.wavelengths, spec, p0=initial_guess, sigma=spec_uncert)
 
         plt.plot(self.wavelengths, gaussian(self.wavelengths, *popt), "r--")
-        plt.text(popt[0]+0.01, popt[2]*0.95, "Center: %.3f $\mu m \pm $ %.3f \nFWHM: %.3f $\mu m \pm $ %.3f" % 
+        plt.text(popt[0]+0.01, popt[2]*0.95, "Center: %.3f $\mu m \pm $ %.3f \nFWHM: %.3f $\mu m \pm $ %.3f" %
                 (popt[0], np.sqrt(pcov[0,0]), popt[1], np.sqrt(pcov[1,1])))
         #stop()
 
@@ -681,15 +678,15 @@ class IFSSpectralCube(IFSData):
             for wave, flux in table:
                 plt.plot( [wave, wave], [0,flux],  color=color, linewidth=2)
                 #stop()
-    
+
             # rebin array onto observed spectral channels, taking into account sums over
             # each wavelength bin.
             wdelta = waves[1]-waves[0]
-            edge_locations = np.concatenate( (waves-wdelta/2, [waves[-1]+wdelta/2]) ) 
+            edge_locations = np.concatenate( (waves-wdelta/2, [waves[-1]+wdelta/2]) )
             #edge_locations = np.searchsorted( table['wavelength'], wave_bin_edges)
             rebinned_flux = np.zeros_like(waves)
             for i in range(len(waves)):
-                wbin = np.where( (table['wavelength'] > edge_locations[i] ) & 
+                wbin = np.where( (table['wavelength'] > edge_locations[i] ) &
                                  (table['wavelength'] < edge_locations[i+1] ) )
                 rebinned_flux[i] = table['intensity'][wbin].sum()
             plt.plot( waves, rebinned_flux, ":", drawstyle='steps-mid', color=color)
@@ -706,16 +703,16 @@ class IFSSpectralCube(IFSData):
 
         if filter=='Y': ax.set_xbound(0.9, 1.2)
         elif filter=='J': ax.set_xbound(1.05, 1.4)
-        elif filter=='H': 
+        elif filter=='H':
             ax.set_xbound(1.4, 1.9)
             ax.set_ybound(0,5e4)
-        elif filter=='K1': 
+        elif filter=='K1':
             ax.set_xbound(1.8, 2.3)
             ax.set_ybound(0,2e4)
-        elif filter=='K2': 
+        elif filter=='K2':
             ax.set_xbound(2.0, 2.5)
             ax.set_ybound(0,2e4)
- 
+
 
         # now read in the information the DRP uses for fitting wavelengths
         linelist_file = os.path.join(gc.get_directory('GPI_DRP_CONFIG_DIR'), "lampemissionlines.txt")
@@ -733,7 +730,7 @@ class IFSSpectralCube(IFSData):
             for wavelen in wavelens:
                 plt.text(float(wavelen), texty, source)
 
- 
+
         plt.title(filter)
 
 
@@ -750,9 +747,9 @@ class IFSSpectralCube(IFSData):
             # find closest wavelength that matches
             raise NotImplementedError('')
 
-        if vmax is None: 
+        if vmax is None:
             vmax = np.nanmax(self.data[index])
-            if verbose: print "Max value of data: "+str(vmax)
+            if verbose: print("Max value of data: "+str(vmax))
 
         if scale == 'linear':
             norm=matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
@@ -761,7 +758,7 @@ class IFSSpectralCube(IFSData):
             norm=matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax)
 
 
-        plt.imshow( self.data[index], norm=norm) 
+        plt.imshow( self.data[index], norm=norm)
         plt.title(self.name+", slice "+str(index)+": %.3f $\mu m$" % self.wavelengths[index])
 
 
@@ -771,18 +768,18 @@ class IFSPolarimetry(IFSData):
     """ 3D polarimetry orthogonal linear polarization pair IFS data from GPI
 
     """
-    def imshow(self, what='i', vmin=None, vmax=None, scale='log', norm=None, 
-            center=None, crop=None, aspect=1.0, 
+    def imshow(self, what='i', vmin=None, vmax=None, scale='log', norm=None,
+            center=None, crop=None, aspect=1.0,
             verbose=False, coords='arcsec',
-            colorbar=False, colorbar_orientation='horizontal', colorbar_kwargs=None, 
-            smooth=None, counts_per_sec=False, 
-            mask = None, 
+            colorbar=False, colorbar_orientation='horizontal', colorbar_kwargs=None,
+            smooth=None, counts_per_sec=False,
+            mask = None,
             **kwargs):
-        """ 
+        """
         Parameters
         ----------
         what: string
-            What quantity to display. One of {'i','q','u','v','p'} etc. 
+            What quantity to display. One of {'i','q','u','v','p'} etc.
         vmin, vmax : floats
             Min and max for display scale. Default is image min and max
         norm : matplotlib.colors.Norm instance
@@ -798,7 +795,7 @@ class IFSPolarimetry(IFSData):
         smooth : float, optional
             Smooth by Gaussian filtering before display? Set this to the desired Gaussian FWHM
         counts_per_sec : Boolean
-            Display in counts per second? 
+            Display in counts per second?
 
         """
 
@@ -825,15 +822,15 @@ class IFSPolarimetry(IFSData):
             if vmax is None: vmax = np.nanmax(what_to_plot)
             if vmin is None: vmin = np.nanmin(what_to_plot)
             if scale=='log':
-                if vmin < 0 : 
+                if vmin < 0 :
                     _log.warning("Cannot have a negative vmin for a log scale.")
-                    vmin=0.01 
+                    vmin=0.01
 
                 norm = matplotlib.colors.LogNorm(vmin=vmin,vmax=vmax)
             else:
                 norm = matplotlib.colors.Normalize(vmin=vmin,vmax=vmax)
             if verbose:
-                print ("vmin: {0}\tvmax: {1}".format(vmin,vmax))
+                print("vmin: {0}\tvmax: {1}".format(vmin,vmax))
 
         if smooth is not None:
             import scipy.ndimage
@@ -936,7 +933,7 @@ class IFSStokesCube(IFSPolarimetry):
         return self.p/self.i
 
     def polvect(self,showevery=5, smooth=True, fractional=False, imin=None, pmin=None,pmax=None,pfmin=None,
-            scale=1.0, scalebar_value=0.5, scalebar_location=(0.85, 0.95), scalebar_fontsize='large', 
+            scale=1.0, scalebar_value=0.5, scalebar_location=(0.85, 0.95), scalebar_fontsize='large',
             scalebar_label=None, coords='arcsec',
             color='white', verbose=False, **kwargs):
         """ Plot polarization vectors for Stokes datacube.
@@ -967,7 +964,7 @@ class IFSStokesCube(IFSPolarimetry):
 
         """
 
-        
+
         polarization = self.p.copy()
 
         # First smooth, if appropriate
@@ -1003,13 +1000,13 @@ class IFSStokesCube(IFSPolarimetry):
             Y -= self['PSFCENTY']
             X *= _pixelscale
             Y *= _pixelscale
-            if verbose: print "X: ", X.min(), X.max()
+            if verbose: print("X: ", X.min(), X.max())
         else:
             # coordinates in pixels
             Y, X = np.indices(self.i.shape)
 
         Q = plt.quiver(X[::showevery, ::showevery], Y[::showevery, ::showevery], vecX[::showevery, ::showevery], vecY[::showevery, ::showevery],
-                headwidth=0, headlength=0, headaxislength=0.0, pivot='middle', color=color, edgecolor=color, 
+                headwidth=0, headlength=0, headaxislength=0.0, pivot='middle', color=color, edgecolor=color,
                 scale = default_scale/scale,
                 **kwargs)
 
@@ -1040,7 +1037,7 @@ class IFSData2D(IFSData):
 
     """
     def Destripe(self, method='simple'):
-        """ Remove horizontal banding using H2RG reference pixels 
+        """ Remove horizontal banding using H2RG reference pixels
 
         Parameters
         -----------
@@ -1058,7 +1055,7 @@ class IFSData2D(IFSData):
 
     def DisplayZooms(self, format=(3,3), size=64, vmin=0, vmax=None, scale='log', verbose=False, _right_side=False,
             title=True, **kwargs):
-        """ Display zoomed in sub regions of the image 
+        """ Display zoomed in sub regions of the image
 
         Parameters
         -----------
@@ -1075,9 +1072,9 @@ class IFSData2D(IFSData):
         pos_x = np.linspace(size/2, 2047-size/2, format[0])
         pos_y = np.linspace(size/2, 2047-size/2, format[1])
 
-        if vmax is None: 
+        if vmax is None:
             vmax = np.nanmax(self.data)
-            if verbose: print "Max value of data: "+str(vmax)
+            if verbose: print("Max value of data: "+str(vmax))
 
         plt.clf()
 
@@ -1089,7 +1086,7 @@ class IFSData2D(IFSData):
 
 
         #fig = plt.figure(num=1, figsize=(7.1,6.9))
-        if _right_side: 
+        if _right_side:
             # subplots order is Y, X
             fig, axarr0 = plt.subplots( format[0], format[1]*2,  figsize=(17, 7.65), num=2)
             axarr = axarr0[ :, format[1]:]
@@ -1125,9 +1122,9 @@ class IFSData2D(IFSData):
         if self.data.shape != (2048, 2048):
             raise ValueError("Input image doesn't appear to be 2048 x 2048.")
 
-        if vmax is None: 
+        if vmax is None:
             vmax = np.nanmax(self.data)
-            if verbose: print "Max value of data: "+str(vmax)
+            if verbose: print("Max value of data: "+str(vmax))
 
         if scale == 'linear':
             norm=matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
@@ -1142,12 +1139,8 @@ class IFSData2D(IFSData):
         xmin = axarr[0,0,].get_position().corners()[0,0]
         ymin = axarr[format[0]-1,format[1]-1].get_position().corners()[0,1]
         xmax = axarr[format[0]-1,format[1]-1].get_position().corners()[3,0]
-        #print xmin, xmax, ymin, ymax
-        #plt.subplot(121)
 
-        #bigax = plt.axes( (0.1, ymin, xmax-xmin, ymax))
         bigax = plt.subplot(121)
-
         bigax.imshow(self.data, norm=norm)
 
 #---------------------------------------------------------------
@@ -1176,7 +1169,7 @@ class IFSSpectrum1D(IFSData):
 
     def DisplayZooms(self, format=(3,3), size=64, vmin=0, vmax=None, scale='log', verbose=False, _right_side=False,
             title=True):
-        """ Display zoomed in sub regions of the image 
+        """ Display zoomed in sub regions of the image
 
         Parameters
         -----------
@@ -1193,9 +1186,9 @@ class IFSSpectrum1D(IFSData):
         pos_x = np.linspace(size/2, 2047-size/2, format[0])
         pos_y = np.linspace(size/2, 2047-size/2, format[1])
 
-        if vmax is None: 
+        if vmax is None:
             vmax = np.nanmax(self.data)
-            if verbose: print "Max value of data: "+str(vmax)
+            if verbose: print("Max value of data: "+str(vmax))
 
         plt.clf()
 
@@ -1207,7 +1200,7 @@ class IFSSpectrum1D(IFSData):
 
 
         #fig = plt.figure(num=1, figsize=(7.1,6.9))
-        if _right_side: 
+        if _right_side:
             # subplots order is Y, X
             fig, axarr0 = plt.subplots( format[0], format[1]*2,  figsize=(17, 7.65), num=2)
             axarr = axarr0[ :, format[1]:]
@@ -1243,9 +1236,9 @@ class IFSSpectrum1D(IFSData):
         if self.data.shape != (2048, 2048):
             raise ValueError("Input image doesn't appear to be 2048 x 2048.")
 
-        if vmax is None: 
+        if vmax is None:
             vmax = np.nanmax(self.data)
-            if verbose: print "Max value of data: "+str(vmax)
+            if verbose: print("Max value of data: "+str(vmax))
 
         if scale == 'linear':
             norm=matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
@@ -1260,16 +1253,13 @@ class IFSSpectrum1D(IFSData):
         xmin = axarr[0,0,].get_position().corners()[0,0]
         ymin = axarr[format[0]-1,format[1]-1].get_position().corners()[0,1]
         xmax = axarr[format[0]-1,format[1]-1].get_position().corners()[3,0]
-        #print xmin, xmax, ymin, ymax
-        #plt.subplot(121)
 
-        #bigax = plt.axes( (0.1, ymin, xmax-xmin, ymax))
         bigax = plt.subplot(121)
 
         bigax.imshow(self.data, norm=norm)
 
 
- 
+
 #---------------------------------------------------------------
 
 
@@ -1318,9 +1308,9 @@ class IFSwavecal(GPI_generic_data):
         wave_y0 = self.wavecal_ypos - dist * np.cos(self.wavecal_tilt)
 
         return (wave_y0, wave_x0)
- 
 
-    
+
+
     @property
     def wavecal_xpos(self):
         return self.data[1]
@@ -1349,11 +1339,9 @@ class IFSwavecal(GPI_generic_data):
             minval = gooddata.min()
             maxval = gooddata.max()
             stdval = gooddata.std()
-            #print title
-            #print "Data mean=%5g +- %5g, min=%5g, max=%5g" % (meanval, stdval, minval, maxval)
-            plt.text(0.5, 0.1, "Mean=%5g +- %5g,\n min=%5g, max=%5g" % (meanval, stdval, minval, maxval), transform=ax.axes.transAxes, 
+            plt.text(0.5, 0.1, "Mean=%5g +- %5g,\n min=%5g, max=%5g" % (meanval, stdval, minval, maxval), transform=ax.axes.transAxes,
                 horizontalalignment='center', fontsize=10)
-        
+
         plt.title(title)
 
     def _hist1(self, data, pos=None, range=None, title="Histogram", bins=20, facecolor='none', histtype='step', **kwargs):
@@ -1364,11 +1352,11 @@ class IFSwavecal(GPI_generic_data):
         plt.hist(data[wg], range=range, bins=bins, facecolor=facecolor, histtype=histtype, **kwargs)
         plt.title(title)
 
- 
+
     def plot(self):
         """ Plot the 5 components of a wavelength solution """
 
-        mask = np.isfinite(self.data.sum(axis=0)) 
+        mask = np.isfinite(self.data.sum(axis=0))
 
         plt.clf()
         self._show1(self.wavecal_ypos, 1, title='Y positions of spectra \n[pix]', vmin=0, vmax=2048, mask=mask)
@@ -1381,7 +1369,7 @@ class IFSwavecal(GPI_generic_data):
 
     def plotResolution(self, vmin=30, vmax=90):
         """ Plot spectral resolution over the FOV"""
-        mask = np.isfinite(self.data.sum(axis=0)) 
+        mask = np.isfinite(self.data.sum(axis=0))
 
         plt.clf()
         self._show1(self.wavecal_lambda0/self.wavecal_dispersion/2, title='Spectral Resolution per 2 pixels', vmin=vmin, vmax=vmax, mask=mask)
@@ -1394,29 +1382,29 @@ class IFSwavecal(GPI_generic_data):
         elif self.filter=='K2': lrange = (2.118, 2.384)
 
         #compute positon of longest end of spectrum:
-        # The closest adjacent spectrum to this is going to be either one higher in Y lenslet index, 
-        # or one higher in Y and one lower in X. 
+        # The closest adjacent spectrum to this is going to be either one higher in Y lenslet index,
+        # or one higher in Y and one lower in X.
         #dist0 = (lrange[0]-self.wavecal_lambda0)/ self.wavecal_dispersion
         #xend0 = self.wavecal_xpos + dist * np.sin(self.wavecal_tilt)
         #yend0 = self.wavecal_ypos + dist * np.cos(self.wavecal_tilt)
 
         # compute the X difference for the lenslet 1 higher in Y value
-        adjacent1_ypos = np.roll(self.wavecal_ypos, -1, axis=0)  
-        adjacent1_xpos = np.roll(self.wavecal_xpos, -1, axis=0)  
+        adjacent1_ypos = np.roll(self.wavecal_ypos, -1, axis=0)
+        adjacent1_xpos = np.roll(self.wavecal_xpos, -1, axis=0)
         # compute offset in Y to adjacent spectrum
         deltay_1 =self.wavecal_ypos - adjacent1_ypos
         # compute x position of current spectrum at that Y
-        deltax_1 = deltay_1 * np.tan(self.wavecal_tilt) 
+        deltax_1 = deltay_1 * np.tan(self.wavecal_tilt)
         # compute difference from next spectrum position
         xoffset_1 = np.abs(self.wavecal_xpos + deltax_1 - adjacent1_xpos)
 
         # repeat calc for adjacent pixel, one lower in X
-        adjacent2_ypos = np.roll(np.roll(self.wavecal_ypos, -1, axis=0), 1, axis=1)  
-        adjacent2_xpos = np.roll(np.roll(self.wavecal_xpos, -1, axis=0), 1, axis=1)  
+        adjacent2_ypos = np.roll(np.roll(self.wavecal_ypos, -1, axis=0), 1, axis=1)
+        adjacent2_xpos = np.roll(np.roll(self.wavecal_xpos, -1, axis=0), 1, axis=1)
         # compute offset in Y to adjacent spectrum
         deltay_2 =self.wavecal_ypos - adjacent2_ypos
         # compute wavelength at which that is the case
-        deltax_2 = deltay_2 * np.tan(self.wavecal_tilt) 
+        deltax_2 = deltay_2 * np.tan(self.wavecal_tilt)
         xoffset_2 = np.abs(self.wavecal_xpos + deltax_2 - adjacent2_xpos)
 
         xoffsets = np.zeros((2, xoffset_2.shape[0], xoffset_2.shape[1]))
@@ -1433,7 +1421,7 @@ class IFSwavecal(GPI_generic_data):
         plt.text(200, 40, "Minimum: %.2f" % np.nanmin(minxoffset))
         plt.text(200, 20, "Maximum: %.2f" % np.nanmax(minxoffset))
 
-    
+
     def plotComparison(self, otherfile):
         """ Compare 2 different wavecal files, with plots
         """
@@ -1446,7 +1434,7 @@ class IFSwavecal(GPI_generic_data):
         difference = self.data - other.data
 
         #mask = (self.data[0] != 0)
-        mask = np.isfinite(difference.sum(axis=0)) 
+        mask = np.isfinite(difference.sum(axis=0))
 
         plt.clf()
         #--- Create 5 plots with 2D images showing differences of the files
@@ -1470,7 +1458,7 @@ class IFSwavecal(GPI_generic_data):
         for wavcal in [self, other]:
             # find center pixel
             radius = np.sqrt((wavcal[0]-1024)**2+(wavcal[1]-1024)**2)
-            radius[ ~np.isfinite(wavcal[0])] = 1e6 # mask out regions outside the array. 
+            radius[ ~np.isfinite(wavcal[0])] = 1e6 # mask out regions outside the array.
             wm = np.where(radius == radius.min())
             #wm = np.argmin(radius)
             x0 = wavcal[1][wm]
@@ -1478,13 +1466,13 @@ class IFSwavecal(GPI_generic_data):
             lambda0 = wavcal[2][wm]
             disp0 = wavcal[3][wm]
             tilt0 = wavcal[4][wm] # radians
-            
+   
 
             dist = 0.3 / disp0 # FIXME should be not hard coded.
             xend = x0 + dist * np.sin(tilt0)
             yend = y0 + dist * np.cos(tilt0)
 
-                #DISP[0,0]=X2[0,ii]  
+                #DISP[0,0]=X2[0,ii]
                 #DISP[1,0]=X2[1,ii]
                 #d2=(lambc-wavcal(ii,jj,2))/wavcal(ii,jj,3)
                 #DISP[0,1]=d2*sin(wavcal(ii,jj,4))+wavcal(ii,jj,1)
@@ -1512,7 +1500,7 @@ class IFSwavecal(GPI_generic_data):
                     if wavcal is self:
                         plt.text(xend+2, yend, source +" "+wavelen)
 
-                
+       
         ax3.set_xbound(1020, 1040)
         ax3.set_ybound(1020, 1044)
         for axis in [ax3.xaxis, ax3.yaxis]:
@@ -1521,13 +1509,13 @@ class IFSwavecal(GPI_generic_data):
         ax3.grid(True, which='minor', color='black', linestyle=':', alpha=0.4)
         ax3.grid(False, which='major')
         ax3.set_aspect('equal')
-    
+
         plt.legend(loc='lower left', frameon=False)
 
         stop()
 
         # display a 2D region with equal aspect ratio...
- 
+
     def plotHistograms(self, erase=True, suptitle=True, **kwargs):
         """ Display histograms of the quantities of interest in a wavelength solution """
         if erase: plt.clf()
@@ -1549,7 +1537,7 @@ class DataCollection(object):
         """ A collection of several GPI data files
 
         This acts in many ways like an OrderedDict, the contents of which are
-        some number of gpidata objects. 
+        some number of gpidata objects.
 
         >>> dc = DataCollection('/some/path/files*.fits')
         >>> len(dc)
@@ -1593,12 +1581,12 @@ class DataCollection(object):
         self._contents = collections.OrderedDict( [(os.path.abspath(filename),read(filename,loadData=loadData)) for filename in filenames])
 
     def __repr__(self):
-        return "<%s.%s : containing %d files >" % (self.__class__.__module__, self.__class__.__name__, len(self._contents)) 
+        return "<%s.%s : containing %d files >" % (self.__class__.__module__, self.__class__.__name__, len(self._contents))
 
     @property
     def filenames(self):
         return self._contents.keys()
- 
+
     def __getitem__(self,key):
         """ If passed an integer N, return the Nth file
         If passed a string, try to return a file with that name
@@ -1625,7 +1613,7 @@ class DataCollection(object):
     def values(self):
         return self._contents.values()
 
-    # allow iteration over the ordered dict 
+    # allow iteration over the ordered dict
     def __iter__(self):
         return self._contents.__iter__()
     def next(self):
@@ -1634,7 +1622,7 @@ class DataCollection(object):
 
 
     def getKeywordValues(self, keyword, simplify=None):
-        """ Query all the files for some keyword and 
+        """ Query all the files for some keyword and
         return a list of the keyword values.
 
         Any files which lack that keyword will have a None in their place
@@ -1655,34 +1643,34 @@ class DataCollection(object):
         return np.asarray(results) # cast to ndarray so we can use where()
         #return [item[keyword] for item in self._contents.values()]
 
-    @property 
+    @property
     def ifsfilters(self):
         return self.getKeywordValues('IFSFILT', simplify='IFSFILT_' if self.simplifyKeywords else None)
-    @property 
+    @property
     def itimes(self):
         return self.getKeywordValues('ITIME')
-    @property 
+    @property
     def apodizers(self):
         return self.getKeywordValues('APODIZER', simplify='APOD_' if self.simplifyKeywords else None)
-    @property 
+    @property
     def lyotmasks(self):
         return self.getKeywordValues('LYOTMASK', simplify='LYOT_' if self.simplifyKeywords else None)
-    @property 
+    @property
     def dispersers(self):
         return self.getKeywordValues('DISPERSR', simplify='DISP_' if self.simplifyKeywords else None)
-    @property 
+    @property
     def obstypes(self):
         return self.getKeywordValues('OBSTYPE')
-    @property 
+    @property
     def obsclasses(self):
         return self.getKeywordValues('OBSCLASS')
-    @property 
+    @property
     def objects(self):
         return self.getKeywordValues('OBJECT')
-    @property 
+    @property
     def occulters(self):
         return self.getKeywordValues('OCCULTER', simplify='FPM_' if self.simplifyKeywords else None)
-    @property 
+    @property
     def dates(self):
         return self.getKeywordValues('DATE-OBS')
 
@@ -1702,7 +1690,7 @@ class DataCollection(object):
         """
         oldSimplifyKeywords=self.simplifyKeywords
         self.simplifyKeywords=True # the following code assumes simplify is True
- 
+
         objects= self.objects
         filters= self.ifsfilters
         obstypes= self.obstypes
@@ -1715,11 +1703,11 @@ class DataCollection(object):
         readmodes1 = [readmodes_table[r] for r in readmodes0]
         nreads = self.getKeywordValues('READS')
         readmodes = [(readmodes_table[r]+"-"+str(n) if r >2 else "CDS") for r, n in zip(readmodes0, nreads)]
-        print "%-30s\t%2s\t%s\t%5s\t%s" % ("Filename", "Filt","Obstype","ITime", "Readmode")
+        print("%-30s\t%2s\t%s\t%5s\t%s" % ("Filename", "Filt","Obstype","ITime", "Readmode"))
         for i in range(len(self)):
-            print "%-30s\t%2s\t%s\t%.1f\t%s" % (self.filenames[i], str(filters[i]), str(obstypes[i]), itimes[i], readmodes[i])
+            print("%-30s\t%2s\t%s\t%.1f\t%s" % (self.filenames[i], str(filters[i]), str(obstypes[i]), itimes[i], readmodes[i]))
         self.simplifyKeywords=oldSimplifyKeywords
- 
+
 
     def ValidateFiles(self):
         """ Validate that all files in the collection are valid GPI data files """
@@ -1727,8 +1715,8 @@ class DataCollection(object):
 
     def ParseToRecipes(self, autosave=False, verbose=False):
         """ Parse GPI data file to generate recipes
-        
-        Given some set of files, parse the headers and generate some 
+
+        Given some set of files, parse the headers and generate some
         set of recipes that would optimally reduce them. The resulting
         recipes are not written to disk, but are instead returned as a
         list. The order of elements in this list matters.
@@ -1737,7 +1725,7 @@ class DataCollection(object):
         IDL parsergui__define.pro
 
         """
-        
+
         import re
         import gpi_pipeline
         logging.basicConfig(level=logging.INFO)
@@ -1770,13 +1758,13 @@ class DataCollection(object):
             # we also want Flat considered for wavelength solution in Y band
             if filters[i] =='Y' and objects[i].lower().startswith('flat'): objects[i]='Lamp'
             #Mark filter as irrelevant for Dark exposures
-            if obstypes[i].lower() =='dark': 
+            if obstypes[i].lower() =='dark':
                 filters[i] ='-'
 
             #Lots of mucking around with obsclass required
             ot = obstypes[i].lower()
             if 'object' in ot: obsclasses[i] = 'science'
-            #if 'standard' in ot: 
+            #if 'standard' in ot:
                 #if 'WOLL' in dispersers[i]: obsclasses[i] = 'POLARSTD'
                 #else: obsclasses[i] = 'SPECSTD'
             #TODO check ASTROMTC keyword here??
@@ -1816,7 +1804,7 @@ class DataCollection(object):
                 for iobsclass, current_obsclass in enumerate(uniqobsclasses):
                   for iitime, current_itime in enumerate(uniqitimes):
                     for iobject, current_object in enumerate(uniqobjects):
-                      wmatch = np.where( (filters == current_filter) & 
+                      wmatch = np.where( (filters == current_filter) &
                                          (obstypes == current_obstype) &
                                          (dispersers == current_disperser) &
                                          (occulters == current_occulter) &
@@ -1825,10 +1813,10 @@ class DataCollection(object):
                                          (objects == current_object) )
                       matchct = len(wmatch[0])
                       if verbose:
-                          print "For parameters: "
-                          print ("    "+ "-".join([current_filter,current_obstype,current_disperser,
+                          print("For parameters: ")
+                          print("    "+ "-".join([current_filter,current_obstype,current_disperser,
                               current_occulter,current_obsclass,str(current_itime),current_object]))
-                          print "%d files match. " % matchct
+                          print("%d files match. " % matchct)
                       if matchct == 0: continue
                       current_files = np.asarray(self.filenames)[wmatch]
                       #if matchct > 0: stop()
@@ -1857,7 +1845,7 @@ class DataCollection(object):
                               tempplatenames=['Basic Polarization Sequence']
                           elif current_disperser =='PRISM':
                               #TODO may wish to add various extra calibration steps here?
-                              # science data: 
+                              # science data:
                               if matchct >= 5:
                                   templatenames=['Calibrated Data-cube extraction, ADI reduction']
                               else:
@@ -1868,12 +1856,12 @@ class DataCollection(object):
                           _log.warn("Not sure how to process these files... No recipe selection criteria match.")
                           _log.warn("obstype=%s, obsclass=%s, filter=%s" % (current_obstype, current_obsclass, current_filter))
                           templatenames=[]
-  
+
                       for template in templatenames:
                           OutputRecipes.append( gpi_pipeline.RecipeFromTemplate(template, current_files) )
-  
 
-        print "After parsing, generated %d recipes to process " % len(OutputRecipes)
+
+        print("After parsing, generated %d recipes to process " % len(OutputRecipes))
         #--- clean up and return results
         self.simplifyKeywords=oldSimplifyKeywords
 
@@ -1913,7 +1901,7 @@ def logsheet(dir=".", output="./ifs_files_log.txt", pattern="S*.fits"):
             obstype = info['OBSTYPE']
             objectname=info['OBJECT']
 
-        print "{0:20s}\t{1:12s}\t{2:10s}\t{3:2s}\t{4:10s}\t{5:8.2f}\t{6:s}".format(info.name, obsclass, obstype, info.filter, info['OBSMODE'] , info.itime, objectname)
+        print("{0:20s}\t{1:12s}\t{2:10s}\t{3:2s}\t{4:10s}\t{5:8.2f}\t{6:s}".format(info.name, obsclass, obstype, info.filter, info['OBSMODE'] , info.itime, objectname))
 
 
 
@@ -1932,8 +1920,8 @@ def logsheet2(dir=".", output="gpi_ifs_files_summary.txt", save=False, pattern="
     #header2 = "#          {0:13s}\t{1:12s}  {2:10s}  {3:2s}  {4:10s}  {5:8s}  {6:s}".format("Files","ObsClass","ObsType","Filt","Prism" "Obsmode","I.Time",'Object')
     header2 = "#          {0:13s}\t{1:10s}\t{2:10s}{3:2s} {7:4s}  {4:10s}    {5:8s} {6:s}".format("Files","ObsClass","ObsType","Filt","Obsmode","IntTime",'Object', 'Prism', '')
         #this_file_summary =       "{1:10s}\t{2:10s}  {3:2s} {7:4s}  {4:10s}  {5:8.1f}{8:3s}  {6:s}".format(short_fn, obsclass, obstype, info.filter, info['OBSMODE'] , info.itime, objectname, disperser, coadds)
-    print header1
-    print header2
+    print(header1)
+    print(header2)
 
     if save:
         fp = open(output,'w')
@@ -1976,13 +1964,13 @@ def logsheet2(dir=".", output="gpi_ifs_files_summary.txt", save=False, pattern="
         if info['ABORTED']: this_file_summary += "  **ABORTED**  "
         if (this_file_summary != last_file_summary) and (last_file_summary != ''):
 
-            spacer = '-' 
+            spacer = '-'
             if startfile != prevfile:
                 files = "{0:5s} - {1:5s}".format(startfile, prevfile)
             else:
                 files = "{0:5s}   {1:5s}".format(startfile, '')
             line = "{2:8s}  {0:s}\t{1:s}".format(files, last_file_summary, date)
-            print  line
+            print(line)
             if save: fp.write(line+"\n")
             startfile = short_fn
 
@@ -1997,7 +1985,7 @@ def logsheet2(dir=".", output="gpi_ifs_files_summary.txt", save=False, pattern="
 __all__ = [IFSData, logsheet]
 
 if __name__ == "__main__":
-        
+
     logging.basicConfig(level=logging.INFO, format='%(name)-12s: %(levelname)-8s %(message)s',)
 
     pass
