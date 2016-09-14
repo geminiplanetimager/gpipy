@@ -26,7 +26,7 @@ except ImportError:
 """ Python GPI Data Pipeline code
 
  - Python wrapper to invoke the IDL DRP
- - Pythonic equivalents to various bits of the IDL GPI DRP 
+ - Pythonic equivalents to various bits of the IDL GPI DRP
 
 Key Classes:
 
@@ -35,7 +35,7 @@ Key Classes:
  - Recipe : Object interface to represent & manipulate Recipe files
 
 
- 
+
 HISTORY:
 
   2012-10-10 MP: started
@@ -86,7 +86,7 @@ class GPIConfig(object):
                         except:
                             pass
                     self.settings[parts[0].lower()] = parts[1]
-                    
+     
                 except:
                     _log.debug("Could not parse line: '%s' in file %s" % (line, filename))
                     pass
@@ -98,9 +98,9 @@ class GPIConfig(object):
             _parse_one_file(user_settings_file)
         # note that we have to parse the user file *last* so its
         # settings will override the global one, for any values
-        # listed in both. 
+        # listed in both.
 
-           
+
 
 
     def __getitem__(self, item):
@@ -131,7 +131,7 @@ class GPIConfig(object):
             Default False
         expand : bool
             If set, return an absolute version of the fully expanded pathname
-            with all shortcuts such as ~ for the home directory removed. 
+            with all shortcuts such as ~ for the home directory removed.
             Default True.
         """
         dirname = dirname.upper()
@@ -159,26 +159,26 @@ class GPIConfig(object):
         # case 3: Try defaults
         if result is None:
             method = 'default value'
-            if dirname == 'GPI_DRP_DIR': 
+            if dirname == 'GPI_DRP_DIR':
                 # find where this current file is
                 #raise NotImplementedError('not yet')
                 result = '/Users/mperrin/Dropbox/GPI/sw/pipeline'
-            elif dirname == 'GPI_DRP_TEMPLATES_DIR':   
+            elif dirname == 'GPI_DRP_TEMPLATES_DIR':
                 result = self.get_directory("GPI_DRP_DIR")+os.sep+"recipe_templates"
-            elif dirname == 'GPI_DRP_CONFIG_DIR':      
+            elif dirname == 'GPI_DRP_CONFIG_DIR':
                 result = self.get_directory("GPI_DRP_DIR")+os.sep+"config"
-            elif dirname == 'GPI_DRP_LOG_DIR':         
+            elif dirname == 'GPI_DRP_LOG_DIR':
                 result = self.get_directory("GPI_REDUCED_DATA_DIR")+os.sep+"logs"
-            elif dirname == 'GPI_RECIPE_OUTPUT_DIR':   
+            elif dirname == 'GPI_RECIPE_OUTPUT_DIR':
                 result = self.get_directory("GPI_REDUCED_DATA_DIR")+os.sep+"recipes"
-            elif dirname == 'GPI_DRF_OUTPUT_DIR':      
+            elif dirname == 'GPI_DRF_OUTPUT_DIR':
                 result = self.get_directory("GPI_RECIPE_OUTPUT_DIR") # back compatible alias
-            elif dirname == 'GPI_CALIBRATIONS_DIR':    
+            elif dirname == 'GPI_CALIBRATIONS_DIR':
                 result = self.get_directory("GPI_REDUCED_DATA_DIR")+os.sep+"calibrations"
-            elif dirname == 'GPI_DST_DIR': 
+            elif dirname == 'GPI_DST_DIR':
                 result = os.path.dirname(gpi_utils.idl_path_find_file('dst'))
                 method='location of dst.pro in $IDL_PATH'
-            elif dirname == 'GPI_DST_DIR': 
+            elif dirname == 'GPI_DST_DIR':
                 # grandparent directory of gpipiperun.pro should be pipeline root
                 result = os.path.dirname(os.path.dirname(gpi_utils.idl_path_find_file('gpipiperun')))
 
@@ -196,7 +196,7 @@ class GPIConfig(object):
 
     def expand_path(self, pathname):
         """ Expand paths using GPI named directories
-        This includes handling the case of direcory definitions not as 
+        This includes handling the case of direcory definitions not as
         environment variables but part of the GPI data pipeline configurations
 
         """
@@ -210,8 +210,8 @@ class GPIConfig(object):
 #---------------------------------------------------------------------------------
 class GPIPrimitivesConfig(object):
     """ A class for the primitives configuration file
-    
-    Not a lot of functionality here yet. 
+
+    Not a lot of functionality here yet.
 
     >>> pc = GPIPrimitivesConfig()
     >>> pc.ListPrimitives()
@@ -223,7 +223,7 @@ class GPIPrimitivesConfig(object):
     """
     def __init__(self):
         conf = GPIConfig()
-        
+
         self.configdir = conf.get_directory('GPI_DRP_CONFIG')
         self.filename = os.path.join(self.configdir, 'gpi_pipeline_primitives.xml')
 
@@ -231,9 +231,9 @@ class GPIPrimitivesConfig(object):
         # Define an internal helper class
         class _primitive_accessor(object):
             """ Wrapper interface class to allow accessing the named
-            <module> (AKA "primitive") elements in an XML Recipe file using a Dict-like interface. 
+            <module> (AKA "primitive") elements in an XML Recipe file using a Dict-like interface.
 
-            Don't use this on it's own, use it as the primitive element of a DRF object: 
+            Don't use this on it's own, use it as the primitive element of a DRF object:
 
             mydrf = DRF('some_file.xml')
             mydrf.module['Dark subtraction']
@@ -280,10 +280,10 @@ class GPIPrimitivesConfig(object):
                             argdict[longkey] = None
                     arguments.append(argdict)
                 mydict['Arguments'] = arguments
-                
+ 
                 return mydict
 
-    
+
         self.primitive= _primitive_accessor(self)
 
 
@@ -298,12 +298,12 @@ class GPIPrimitivesConfig(object):
             result = [p for p in result if 'TESTING' not in p.type.upper()]
         if deprecated == False:
             result = [p for p in result if 'DEPRECATED' not in p.type.upper()]
- 
+
         return result
 
 
     def ListOrderedPrimitives(self, return_list=False, type=None, testing=False,deprecated=False):
-        """ Return a list of all primitives, in order of recommended execution 
+        """ Return a list of all primitives, in order of recommended execution
 
         Parameters:
         -------------
@@ -324,7 +324,7 @@ class GPIPrimitivesConfig(object):
         if type is not None:
             all_primitives=[a for a in all_primitives if ((type in a.type) or ('ALL' in a.type ))]
 
-        names = np.asarray( [a.name for a in all_primitives]) 
+        names = np.asarray( [a.name for a in all_primitives])
         orders = np.asarray( [a.order for a in all_primitives] )
         sorter = np.argsort(orders)
         if return_list:
@@ -372,8 +372,8 @@ class Primitive(object):
         header = []
         started=False
         for line in open(self.full_path).readlines():
-            if started: 
-                if line.startswith(";-"): 
+            if started:
+                if line.startswith(";-"):
                     return header
 
                 if trim:
@@ -391,7 +391,7 @@ class Primitive(object):
 
     def get_idl_code(self):
         return open(self.full_path).readlines()
-            
+
 
 
 
@@ -426,7 +426,7 @@ class Primitive(object):
         output += "-"*len(self.name)+"\n\n"
         output += self.comment
         output += "\n\n**Category**: "+self.type+"      **Order**: "+str(self.order)
-        output += "\n\n**Inputs**: "+get_header_setting('INPUTS:') 
+        output += "\n\n**Inputs**: "+get_header_setting('INPUTS:')
         output += "\n\n**Outputs**: "+get_header_setting('OUTPUTS:')
         if suffix is not None:
             output += "      **Output Suffix**: "+suffix
@@ -498,7 +498,7 @@ class GPICalDB(object):
     def __init__(self):
         import atpy
         conf = GPIConfig()
-        
+
         self.caldir = conf.get_directory('GPI_CALIBRATIONS')
         self.dbfilename=self.caldir + os.sep + "GPI_Calibs_DB.fits"
 
@@ -613,7 +613,7 @@ class GPICalDB(object):
         pass
 
     def get_readoutmode_string(self, fits_data):
-        """ format a string describing unambiguously the IFS readout mode. 
+        """ format a string describing unambiguously the IFS readout mode.
 
         """
         raise NotImplementedError("Not implemented yet")
@@ -622,10 +622,10 @@ class GPICalDB(object):
     def select_calfiles(self, caltype=None, disperser=None, ifsfilt=None, apodizer=None,
             lyotmask=None, itime=None, readoutmode=None, datestr=None,
             return_mask=False, return_indices=False, return_objects=False):
-        """ Return a list of one or more calibration files that match some chosen query criteria 
-        
-        Provide one or more selection criteria when calling. These will be combined with logical AND such that only 
-        files matchings all critera are returned. 
+        """ Return a list of one or more calibration files that match some chosen query criteria
+
+        Provide one or more selection criteria when calling. These will be combined with logical AND such that only
+        files matchings all critera are returned.
 
         Parameters
         -----------
@@ -650,7 +650,7 @@ class GPICalDB(object):
             Value for readout mode string to select results
         datestr : string
             Value for date string YYMMDD keyword to select results
-               
+
         """
 
         mask = np.ones(len(self.table), dtype=bool)
@@ -665,12 +665,12 @@ class GPICalDB(object):
         if readoutmode is not None: mask = mask & (self.table['READOUTMODE'] == readoutmode)
 
         # matches on computed or derived values
-        if datestr is not None: 
+        if datestr is not None:
             datestrs = np.asarray([gpi_utils.jd2datestr(jd) for jd in self.table['JD']])
             mask = mask & (datestrs == datestr)
 
         # selection by ranges:
-            
+
         if return_indices: return np.where(mask)[0]
         elif return_mask: return mask
         elif return_objects:
@@ -718,7 +718,7 @@ class GPICalDB(object):
         Parameters
         ------------
         by : string
-            How to organize/sort the report? You can organize by 'type' of file or by 'date'. 
+            How to organize/sort the report? You can organize by 'type' of file or by 'date'.
         """
 
 
@@ -737,7 +737,7 @@ class GPICalDB(object):
             for d in dates:
                 print(" ***** %s ***** " % d)
                 self._describe( self.select_calfiles(datestr=d, return_mask=True))
- 
+
 
     def _closest_itime(self, requested_itime):
         itimes = np.asarray(list(self.unique_itimes))
@@ -748,13 +748,13 @@ class GPICalDB(object):
     def darks_by_time(self, itime=1.45):
         """ List all dark files for a given itime"""
 
-        return db._list(db.select_calfiles(caltype='Dark File', 
+        return db._list(db.select_calfiles(caltype='Dark File',
             itime=self._closest_itime(itime), return_mask=True), sortby='jd')
 
 
 #---------------------------------------------------------------------------------
 class Recipe(object):
-    """ Class for parsing/manipulating data reduction recipe files 
+    """ Class for parsing/manipulating data reduction recipe files
 
 
     >>> rec = Recipe('somefile.xml')
@@ -771,7 +771,7 @@ class Recipe(object):
         else:
             raise ValueError("Must provide either a filename or an XML string to instantiate a Recipe")
             # TODO allow blank recipes somehow? Use etree factory class to instantiate a blank recipe maybe?
- 
+
 
 
         self.last_saved_filename=None
@@ -779,9 +779,9 @@ class Recipe(object):
         # Define an internal helper class
         class _primitive_accessor(object):
             """ Wrapper interface class to allow accessing the named
-            <module> (AKA "primitive") elements in an XML Recipe file using a Dict-like interface. 
+            <module> (AKA "primitive") elements in an XML Recipe file using a Dict-like interface.
 
-            Don't use this on it's own, use it as the primitive element of a DRF object: 
+            Don't use this on it's own, use it as the primitive element of a DRF object:
 
             mydrf = DRF('some_file.xml')
             mydrf.module['Dark subtraction']
@@ -810,7 +810,7 @@ class Recipe(object):
                     raise KeyError("No module found with name %s" % str(i))
 
 
-    
+
         self.primitive= _primitive_accessor(self)
 
 
@@ -825,7 +825,7 @@ class Recipe(object):
     # properties, but I'm ignoring it for now:
 
     @property
-    def _xml_dataset(self): 
+    def _xml_dataset(self):
         dataset = list(self._tree.getroot().iter('dataset'))
         if len(dataset)> 1:
             raise ValueError('Invalid DRF: contains more than one <dataset> element')
@@ -834,23 +834,23 @@ class Recipe(object):
     @property
     def name(self): return self._tree.getroot().attrib['name']
     @name.setter
-    def name(self,value):  self._tree.getroot().attrib['name'] = value 
+    def name(self,value):  self._tree.getroot().attrib['name'] = value
 
     @property
     def reductionType(self): return self._tree.getroot().attrib['ReductionType']
     @reductionType.setter
-    def reductionType(self,value):  self._tree.getroot().attrib['ReductionType'] = value 
+    def reductionType(self,value):  self._tree.getroot().attrib['ReductionType'] = value
 
 
 
     @property
     def input_path(self): return self._xml_dataset.attrib['InputDir']
     @input_path.setter
-    def input_path(self,value):  self._xml_dataset.attrib['InputDir'] = value 
+    def input_path(self,value):  self._xml_dataset.attrib['InputDir'] = value
     @property
     def output_path(self): return self._xml_dataset.attrib['OutputDir']
     @output_path.setter
-    def output_path(self,value):  self._xml_dataset.attrib['OutputDir'] = value 
+    def output_path(self,value):  self._xml_dataset.attrib['OutputDir'] = value
 
 
 
@@ -882,12 +882,12 @@ class Recipe(object):
         self.last_saved_filename=filename
 
     def Queue(self, filename=None):
-        """ Add the Recipe to the reduction queue. 
+        """ Add the Recipe to the reduction queue.
         Will use last saved filename, if available, otherwise will use a
         default name. """
 
 
-        if filename is not None: 
+        if filename is not None:
             queue_fn = filename
         else:
             if self.last_saved_filename is not None:
@@ -916,12 +916,12 @@ class Recipe(object):
         if len(modules)== 0:
             raise ValueError('Invalid DRF: contains no <module> elements')
         module_names = [el.attrib['name'] for el in list(modules)]
-        return module_names 
+        return module_names
     @primitives_names.setter
     def set_primitives(self, value):
         raise NotImplemented('Cannot set primitives')
 
-    # 
+    #
 
 
 
@@ -939,7 +939,7 @@ class Recipe(object):
             for el in list(self._xml_dataset):
                 if el.tag.lower() == 'fits':
                     key0 = el.keys()[0].lower()
-                    if key0 == 'filename': 
+                    if key0 == 'filename':
                         dataset_files.append(el.attrib[el.keys()[0]])
 
         #except:
@@ -950,7 +950,7 @@ class Recipe(object):
         """ Set the dataset to contain these files """
         if not hasattr(filelist,'__iter__'):
             raise ValueError("You can only set a dataset to some iterable (list, tuple, etc) set of filenames")
-        
+
         # remove all existing items
         for el in self._xml_dataset: self._xml_dataset.remove(el)
 
@@ -962,11 +962,11 @@ class Recipe(object):
             elif path != path0:
                 _log.error( "ERROR: files in dataset are not all in same directory")
             el = etree.SubElement(self._xml_dataset, "fits", FileName=fname)
-        if path0 is None or filelist == []: 
+        if path0 is None or filelist == []:
             _log.warning("Setting dataset to a null dataset containing no files.")
             path0 = '' # for the case of a blank dataset
         self.input_path = path0
-        
+
 
 
     def _check_dataset_exists(self):
@@ -977,7 +977,7 @@ class Recipe(object):
         if error_filenames != []:
             raise IOError("File(s) %s do not exist." % ", ".join(error_filenames))
 
-    
+
     def __str__(self):
         return etree.tostring(self._tree)
 
@@ -1025,7 +1025,7 @@ def ListRecipeTemplates(ReductionType=None):
         out = []
         for filename in templates:
             rr = Recipe(filename)
-            if hasattr(rr, 'name'): 
+            if hasattr(rr, 'name'):
                 out.append(rr.name)
             else:
                 out.append('-no name')
@@ -1058,7 +1058,7 @@ def validate_templates():
             print(prim.argument_names)
 
 
- 
+
 
 #--------------------------------------------------------------------------------
 class PipelineDriver(object):
@@ -1068,13 +1068,13 @@ class PipelineDriver(object):
 
         if indir is None: indir=gpi_utils.expand_path(os.getenv('GPI_RAW_DATA_DIR'))
         if outdir is None: outdir=gpi_utils.expand_path(os.getenv('GPI_DRP_OUTPUT_DIR'))
-            
+
 
         if not indir.endswith(os.sep):
             indir += os.sep
         self.indir = indir
         self.outdir=outdir
-        self.dropcounter=1 
+        self.dropcounter=1
 
         self.scan_templates()
 
@@ -1115,10 +1115,10 @@ class PipelineDriver(object):
             for prism in ['PRISM','WOLLASTON']:
                 pass
 
-   
+
 
 if __name__ == "__main__":
-        
+
     logging.basicConfig(level=logging.INFO)
 
     pass
