@@ -19,7 +19,9 @@ Contents
 .. toctree::
    :maxdepth: 1
 
-   usage.rst
+   files.rst
+   pipeline.rst
+   api_reference.rst
 
 
 Indices and tables

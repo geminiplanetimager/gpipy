@@ -40,7 +40,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'GPI Python data analysis tools'
-copyright = u'2010-2014, GPI Data Analysis Team'
+copyright = u'2010-2016, GPI Data Analysis Team'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -179,7 +179,7 @@ latex_paper_size = 'letter'
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index', 'gpidata.tex', u'GPI Data Pipeline',
-   u'Marshall Perrin, Jerome Maire, and the GPI data analysis team', 'manual'),
+   u'Marshall Perrin and the GPI data analysis team', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
