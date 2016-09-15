@@ -1161,6 +1161,10 @@ class PipelineDriver(object):
         print(fileout)
         files = [line.split()[-1] for line in fileout]
 
+        # make unique
+        files = list(set(files))
+        files.sort()
+
         return (status, out_recipe, files)
 
 
